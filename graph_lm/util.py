@@ -1,0 +1,3 @@
+
+CHECK_NUMERICS = False
+
