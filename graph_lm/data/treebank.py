@@ -2,8 +2,6 @@ import glob
 import os
 import re
 
-FILES = ['train','val','test']
-RECORDS = ["{}.tfrecords".format(f) for f in FILES]
 
 def read_treebank_file(file):
     with open(file, 'r') as f:

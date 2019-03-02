@@ -2,14 +2,15 @@ import os
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.core.example.example_pb2 import Example
 from tensorflow.core.example.feature_pb2 import Feature, Features
 from tensorflow.python.lib.io.tf_record import TFRecordWriter
+
+from .calculate_vocabulary import UNK
 
 
 def encode_words(sentences, wordmap):
     for sentence in sentences:
-        encoded = np.array([wordmap[word] for word in sentence], dtype=np.int32)
+        encoded = np.array([wordmap[word] if word in wordmap else wordmap[UNK] for word in sentence], dtype=np.int32)
         yield encoded
 
 
@@ -17,7 +18,7 @@ def write_records(data, output_file):
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
     with TFRecordWriter(output_file) as writer:
         for datum in data:
-            #data_feat, data_size = feature_array(datum.astype(np.int64))
+            # data_feat, data_size = feature_array(datum.astype(np.int64))
             data_size = feature_int64([datum.shape[0]])
             data_feat = feature_int64_list(datum)
             assert datum.shape[0] > 0
@@ -28,7 +29,7 @@ def write_records(data, output_file):
             context_features = {
                 'data_size': data_size
             }
-            #example = Example(features=Features(feature=feature))
+            # example = Example(features=Features(feature=feature))
             example = tf.train.SequenceExample(
                 context=Features(feature=context_features),
                 feature_lists=tf.train.FeatureLists(feature_list=sequence_features),
@@ -43,6 +44,7 @@ def feature_float32(value):
 
 def feature_int64(value):
     return Feature(int64_list=tf.train.Int64List(value=value))
+
 
 def feature_int64_list(value):
     return tf.train.FeatureList(feature=[

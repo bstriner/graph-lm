@@ -7,16 +7,13 @@ from tensorflow.python.estimator.run_config import RunConfig
 from tensorflow.python.estimator.training import train_and_evaluate
 
 from .default_params import get_hparams
-from .kaldi.inputs import make_input_fn
-from .models.ctc_model import make_ctc_lstm_model_fn
-from .models.ctc_lstm_vae_model import make_ctc_lstm_vae_model_fn
+from .data.inputs import make_input_fns, VOCAB_FILE
+from .models.model_vae_binary_tree import make_model_vae_binary_tree
 
 
 def make_model_fn(hparams, run_config, vocab):
-    if hparams.model == 'ctc':
-        return make_ctc_lstm_model_fn(run_config, vocab)
-    elif hparams.model == 'ctc-vae':
-        return make_ctc_lstm_vae_model_fn(run_config, vocab)
+    if hparams.model == 'vae_binary_tree':
+        return make_model_vae_binary_tree(run_config, vocab)
     else:
         raise ValueError("Unknown model: {}".format(hparams.model))
 
@@ -30,31 +27,16 @@ def train():
         save_checkpoints_steps=tf.flags.FLAGS.save_checkpoints_steps)
     hparams = get_hparams(model_dir, validate=True)
 
-    # Train Data
-    train_input_fn = make_input_fn(
-        tf.flags.FLAGS.train_data_dir,
-        batch_size=tf.flags.FLAGS.train_batch_size,
-        shuffle=True,
-        num_epochs=None,
-        subsample=hparams.subsample,
-        average=False)
+    train_input_fn, eval_input_fn, test_input_fn = make_input_fns(
+        tf.flags.FLAGS.data_dir,
+        batch_size=tf.flags.FLAGS.batch_size)
 
-    # Test Data
-    eval_input_fn = make_input_fn(
-        tf.flags.FLAGS.eval_data_dir,
-        batch_size=tf.flags.FLAGS.eval_batch_size,
-        shuffle=False,
-        num_epochs=1,
-        subsample=hparams.subsample,
-        average=True)
-
-    # Vocab
-    vocab = np.load(tf.flags.FLAGS.vocab_file)
+    vocab = np.load(os.path.join(tf.flags.FLAGS.data_dir, VOCAB_FILE))
 
     # Model
     model_fn = make_model_fn(hparams=hparams, run_config=run_config, vocab=vocab)
     train_spec = tf.estimator.TrainSpec(input_fn=train_input_fn, max_steps=tf.flags.FLAGS.max_steps)
-    eval_spec = tf.estimator.EvalSpec(input_fn=eval_input_fn, steps=None, throttle_secs=0)
+    eval_spec = tf.estimator.EvalSpec(input_fn=eval_input_fn, steps=tf.flags.FLAGS.eval_steps, throttle_secs=0)
     estimator = Estimator(
         model_fn=model_fn,
         config=run_config,
