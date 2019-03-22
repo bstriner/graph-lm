@@ -17,9 +17,9 @@ def main(argv):
 if __name__ == '__main__':
     tf.logging.set_verbosity(tf.logging.INFO)
     tf.flags.DEFINE_string('data_dir', '../../data/eng_news_txt_tbnk-data', 'Data directory')
-    tf.flags.DEFINE_string('model_dir', '../../output/ptb/v20-flat-attn', 'Data directory')
-    #tf.flags.DEFINE_string('config', 'config/vae_binary_tree.json', 'Data directory')
-    #tf.flags.DEFINE_string('config', 'config/vae_ctc_flat.json', 'Data directory')
+    tf.flags.DEFINE_string('model_dir', '../../output/ptb/flat-attn/v1', 'Data directory')
+    # tf.flags.DEFINE_string('config', 'config/vae_binary_tree.json', 'Data directory')
+    # tf.flags.DEFINE_string('config', 'config/vae_ctc_flat.json', 'Data directory')
     tf.flags.DEFINE_string('config', 'config/vae_ctc_flat_attn.json', 'Data directory')
     tf.flags.DEFINE_string('schedule', 'train_and_evaluate', 'Schedule')
     tf.flags.DEFINE_integer('batch_size', 32, 'Batch size')

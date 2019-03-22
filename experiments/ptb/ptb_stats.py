@@ -1,20 +1,14 @@
 import tensorflow as tf
 
-from graph_lm.data.preprocessing import preprocessing, generate_splits
 from graph_lm.data.treebank import read_treebank_files
 
 
 def main(argv):
     sents = list(read_treebank_files(tf.flags.FLAGS.data_dir))
-    data_words = generate_splits(
-        sents=sents,
-        val_ratio=tf.flags.FLAGS.val_size,
-        test_ratio=tf.flags.FLAGS.test_size
-    )
-    preprocessing(
-        data_words=data_words,
-        output_dir=tf.flags.FLAGS.output_dir,
-        min_count=tf.flags.FLAGS.min_count)
+    max_len = max(len(s) for s in sents)
+    min_len = min(len(s) for s in sents)
+    print("Longest sentence: {}".format(max_len))
+    print("Shortest sentence: {}".format(min_len))
 
 
 if __name__ == '__main__':

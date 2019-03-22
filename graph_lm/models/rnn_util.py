@@ -21,18 +21,19 @@ def make_initial_states(batch_size, num_layers, dim, bidirectional=False):
     return initial_h, initial_c
 
 
-def lstm(x, num_layers, num_units, sequence_lengths=None, dropout=0., bidirectional=False):
-    batch_size = tf.shape(x)[1]
-    initial_states = make_initial_states(
-        batch_size=batch_size,
-        num_layers=num_layers,
-        dim=num_units,
-        bidirectional=bidirectional)
-    lstm = CudnnLSTM(
-        num_layers=num_layers,
-        num_units=num_units,
-        direction=CUDNN_RNN_BIDIRECTION if bidirectional else CUDNN_RNN_UNIDIRECTION,
-        dropout=dropout
-    )
-    ret = lstm(x, sequence_lengths=sequence_lengths, initial_state=initial_states)
-    return ret
+def lstm(x, num_layers, num_units, scope='lstm', sequence_lengths=None, dropout=0., bidirectional=False):
+    with tf.variable_scope(scope):
+        batch_size = tf.shape(x)[1]
+        initial_states = make_initial_states(
+            batch_size=batch_size,
+            num_layers=num_layers,
+            dim=num_units,
+            bidirectional=bidirectional)
+        lstm = CudnnLSTM(
+            num_layers=num_layers,
+            num_units=num_units,
+            direction=CUDNN_RNN_BIDIRECTION if bidirectional else CUDNN_RNN_UNIDIRECTION,
+            dropout=dropout
+        )
+        ret = lstm(x, sequence_lengths=sequence_lengths, initial_state=initial_states)
+        return ret

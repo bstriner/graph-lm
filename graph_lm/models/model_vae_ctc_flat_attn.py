@@ -11,6 +11,17 @@ from ..sparse import sparsify
 
 
 def vae_flat_encoder_attn(tokens, token_lengths, vocab_size, params, n, output_length, weights_regularizer=None):
+    """
+
+    :param tokens: (N,L)
+    :param token_lengths: (N,)
+    :param vocab_size:
+    :param params:
+    :param n:
+    :param output_length:
+    :param weights_regularizer:
+    :return:
+    """
     with tf.variable_scope('encoder'):
         with tf.variable_scope('step_1'):
             h = tf.transpose(tokens, (1, 0))  # (L,N)
@@ -38,6 +49,7 @@ def vae_flat_encoder_attn(tokens, token_lengths, vocab_size, params, n, output_l
                 scope='encoder_mlp_1',
                 weights_regularizer=weights_regularizer
             )
+            """
             h = slim.fully_connected(
                 inputs=h,
                 num_outputs=params.encoder_dim,
@@ -45,22 +57,23 @@ def vae_flat_encoder_attn(tokens, token_lengths, vocab_size, params, n, output_l
                 scope='encoder_mlp_2',
                 weights_regularizer=weights_regularizer
             )
+            """
             flat_encoding = slim.fully_connected(
                 inputs=h,
-                num_outputs=params.latent_dim,
+                num_outputs=params.encoder_dim,
                 activation_fn=None,
                 scope='encoder_mlp_3',
                 weights_regularizer=weights_regularizer
-            )
+            )  # (N,D)
         with tf.variable_scope('step_2'):
             h = tf.expand_dims(flat_encoding, axis=0)  # (1, N, D)
-            h = tf.tile(h, (output_length, 1, 1))  # (L,N,D)
+            h = tf.tile(h, (output_length, 1, 1))  # (O,N,D)
             output_hidden, _ = lstm(
                 x=h,
                 num_layers=2,
                 num_units=params.encoder_dim,
                 bidirectional=True
-            )
+            )  # (O, N, D)
         with tf.variable_scope('encoder_attn'):
             output_proj = slim.fully_connected(
                 inputs=output_hidden,
@@ -68,14 +81,14 @@ def vae_flat_encoder_attn(tokens, token_lengths, vocab_size, params, n, output_l
                 activation_fn=None,
                 scope='encoder_output_proj',
                 weights_regularizer=weights_regularizer
-            )
+            )  # (O,N,D)
             input_proj = slim.fully_connected(
                 inputs=hidden_state,
                 num_outputs=params.attention_dim,
                 activation_fn=None,
                 scope='encoder_input_proj',
                 weights_regularizer=weights_regularizer
-            )
+            )  # (O,N,D)
             attn = calc_attn(output_proj, input_proj, token_lengths)  # (n, ol, il)
             tf.summary.image('encoder_attention', tf.expand_dims(attn, 3))
             input_aligned = tf.matmul(
@@ -89,7 +102,7 @@ def vae_flat_encoder_attn(tokens, token_lengths, vocab_size, params, n, output_l
                 num_layers=2,
                 num_units=params.encoder_dim,
                 bidirectional=True
-            )
+            )  # (O, N, D)
             """
             h = slim.fully_connected(
                 inputs=h,
@@ -126,8 +139,7 @@ def vae_flat_encoder_attn(tokens, token_lengths, vocab_size, params, n, output_l
 def vae_flat_decoder_attn(latent, vocab_size, params, n, weights_regularizer=None):
     # latent (N, D)
     with tf.variable_scope('decoder'):
-        depth = params.tree_depth
-        assert depth >= 0
+        """
         h = slim.fully_connected(
             latent,
             num_outputs=params.decoder_dim,
@@ -135,9 +147,10 @@ def vae_flat_decoder_attn(latent, vocab_size, params, n, weights_regularizer=Non
             activation_fn=None,
             weights_regularizer=weights_regularizer
         )
+        """
         h, _ = lstm(
-            x=h,
-            num_layers=2,
+            x=latent,
+            num_layers=3,
             num_units=params.decoder_dim,
             bidirectional=True
         )
@@ -181,11 +194,10 @@ def make_model_vae_ctc_flat_attn(
         token_lengths = features['feature_length']  # (N,)
         sequence_mask = tf.sequence_mask(maxlen=tf.shape(tokens)[1], lengths=token_lengths)
         n = tf.shape(tokens)[0]
-        depth = params.tree_depth
 
         with tf.control_dependencies([
-            tf.assert_greater_equal(tf.pow(2, depth + 1) - 1, token_lengths, message="Tokens longer than tree size"),
-            tf.assert_less_equal(tokens, vocab_size - 1, message="Tokens larger than vocab"),
+            tf.assert_greater_equal(params.flat_length, token_lengths, message="Tokens longer than tree size"),
+            tf.assert_greater(vocab_size, tokens, message="Tokens larger than vocab"),
             tf.assert_greater_equal(tokens, 0, message="Tokens less than 0")
         ]):
             tokens = tf.identity(tokens)
@@ -221,13 +233,11 @@ def make_model_vae_ctc_flat_attn(
                 weights_regularizer=weights_regularizer,
                 n=n
             )
-            sequence_length_ctc = tf.tile(tf.shape(logits)[0:1], (n,))
+            sequence_length_ctc = tf.tile([params.flat_length], (n,))  # tf.shape(logits)[0:1], (n,))
 
         ctc_labels_sparse = sparsify(tokens, sequence_mask)
         ctc_labels = tf.sparse_tensor_to_dense(ctc_labels_sparse, default_value=-1)
-        # ctc_labels = tf.sparse_transpose(ctc_labels, (1,0))
         print("Labels: {}".format(ctc_labels))
-        # tf.tile(tf.pow([2], depth), (n,))
         print("CTC: {}, {}, {}".format(ctc_labels, logits, sequence_length_ctc))
         ctc_loss_raw = tf.nn.ctc_loss(
             labels=ctc_labels_sparse,
