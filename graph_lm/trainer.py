@@ -9,11 +9,17 @@ from tensorflow.python.estimator.training import train_and_evaluate
 from .default_params import get_hparams
 from .data.inputs import make_input_fns, VOCAB_FILE
 from .models.model_vae_binary_tree import make_model_vae_binary_tree
+from .models.model_vae_ctc_flat import make_model_vae_ctc_flat
+from .models.model_vae_ctc_flat_attn import make_model_vae_ctc_flat_attn
 
 
 def make_model_fn(hparams, run_config, vocab):
     if hparams.model == 'vae_binary_tree':
         return make_model_vae_binary_tree(run_config, vocab)
+    elif hparams.model == 'vae_ctc_flat':
+        return make_model_vae_ctc_flat(run_config, vocab)
+    elif hparams.model == 'vae_ctc_flat_attn':
+        return make_model_vae_ctc_flat_attn(run_config, vocab)
     else:
         raise ValueError("Unknown model: {}".format(hparams.model))
 

@@ -39,13 +39,21 @@ def default_params():
     return HParams(
         model='ctasdsac',
 
-        encoder_dim=256,
-        decoder_dim=256,
+        encoder_dim=512,
+        decoder_dim=512,
+        latent_dim=320,
+        attention_dim=256,
 
         tree_depth=8,
+        flat_length=512,
 
         lr=3e-5,
-        l2=1e-6,
+        l2=1e-8,
+        clip_gradient_norm=1.,
+
+        anneal_start=40000,
+        anneal_end=80000,
+        anneal_min=1e-4,
 
         model_version='v1',
         attn_mode='softmax',
@@ -54,16 +62,10 @@ def default_params():
         listener_dim=320,
         dropout=0.,
         vae_depth=3,
-        vae_dim=320,
         vae_dropout=0.,
-        attention_dim=128,
-        latent_dim=128,
+        vae_dim=320,
 
-        anneal_start=2000,
-        anneal_end=10000,
-        anneal_min=1e-3,
         kl_min=1e-2,
-        clip_gradient_norm=0.,
         kernel_size=7
     )
 

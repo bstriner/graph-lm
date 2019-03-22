@@ -1,3 +1,10 @@
+"""
+Train on PTB
+
+ssh -L 6006:localhost:6006 ben@unity
+docker run -it -v /mnt/data/projects/graph-lm/output:/tb -p 6006:6006 tensorflow/tensorflow tensorboard --logdir /tb
+"""
+
 import tensorflow as tf
 
 import graph_lm.trainer
@@ -10,8 +17,10 @@ def main(argv):
 if __name__ == '__main__':
     tf.logging.set_verbosity(tf.logging.INFO)
     tf.flags.DEFINE_string('data_dir', '../../data/eng_news_txt_tbnk-data', 'Data directory')
-    tf.flags.DEFINE_string('model_dir', '../../output/ptb/v14', 'Data directory')
-    tf.flags.DEFINE_string('config', 'config/vae_binary_tree.json', 'Data directory')
+    tf.flags.DEFINE_string('model_dir', '../../output/ptb/v20-flat-attn', 'Data directory')
+    #tf.flags.DEFINE_string('config', 'config/vae_binary_tree.json', 'Data directory')
+    #tf.flags.DEFINE_string('config', 'config/vae_ctc_flat.json', 'Data directory')
+    tf.flags.DEFINE_string('config', 'config/vae_ctc_flat_attn.json', 'Data directory')
     tf.flags.DEFINE_string('schedule', 'train_and_evaluate', 'Schedule')
     tf.flags.DEFINE_integer('batch_size', 32, 'Batch size')
     tf.flags.DEFINE_integer('capacity', 4000, 'capacity')

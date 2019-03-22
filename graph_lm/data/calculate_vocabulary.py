@@ -1,6 +1,7 @@
 from collections import Counter
 
 UNK = "_UNK_"
+BLANK = "_BLANK_"
 
 
 def calculate_wordmap(vocab):
@@ -8,7 +9,7 @@ def calculate_wordmap(vocab):
 
 
 def decode_words(ids, vocab):
-    return " ".join(vocab[i - 1] for i in ids if i > 0)
+    return " ".join(vocab[i] if i < len(vocab) else BLANK for i in ids if i >= 0)
 
 
 def calculate_vocabulary(dataset, min_count=0):

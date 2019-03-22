@@ -1,128 +1,115 @@
-import math
 import os
 
 import tensorflow as tf
 from tensorflow.contrib import slim
-from tensorflow.contrib.cudnn_rnn.python.layers.cudnn_rnn import CudnnLSTM, CUDNN_RNN_BIDIRECTION
+
 from .rnn_util import lstm
 from ..callbacks.ctc_callback import CTCHook
 from ..kl import kl
 from ..sparse import sparsify
 
 
-from .model_vae_ctc_flat import vae_flat_encoder
-
-
-def calc_output(x, vocab_size, params, weights_regularizer=None):
-    # X: (N,*, D)
-    # Y: (N,*, V)
-    with tf.variable_scope('output_mlp', reuse=tf.AUTO_REUSE):
-        h = x
+def vae_flat_encoder(tokens, token_lengths, vocab_size, params, n, weights_regularizer=None):
+    with tf.variable_scope('encoder'):
+        h = tf.transpose(tokens, (1, 0))  # (L,N)
+        embeddings = tf.get_variable(
+            dtype=tf.float32,
+            name="embeddings",
+            shape=[vocab_size, params.encoder_dim],
+            initializer=tf.initializers.truncated_normal(
+                stddev=1. / tf.sqrt(tf.constant(params.encoder_dim, dtype=tf.float32))))
+        h = tf.nn.embedding_lookup(embeddings, h)  # (L, N, D)
+        _, h = lstm(
+            x=h,
+            num_layers=3,
+            num_units=params.encoder_dim,
+            bidirectional=True,
+            sequence_lengths=token_lengths
+        )
+        print("h1: {}".format(h))
+        # h = h[1]  # [-2:, :, :]  # (2, N, D)
+        h = tf.concat(h, axis=-1)
+        print("h2: {}".format(h))
+        h = tf.transpose(h, (1, 0, 2))  # (N,2,D)
+        print("h3: {}".format(h))
+        h = tf.reshape(h, (n, h.shape[1].value * h.shape[2].value))  # (N, 2D)
+        print("h4: {}".format(h))
         h = slim.fully_connected(
             inputs=h,
-            num_outputs=params.decoder_dim,
+            num_outputs=params.encoder_dim,
             activation_fn=tf.nn.leaky_relu,
-            scope='output_mlp_1',
+            scope='encoder_mlp_1',
             weights_regularizer=weights_regularizer
         )
         h = slim.fully_connected(
             inputs=h,
-            num_outputs=params.decoder_dim,
+            num_outputs=params.encoder_dim,
             activation_fn=tf.nn.leaky_relu,
-            scope='output_mlp_2',
+            scope='encoder_mlp_2',
+            weights_regularizer=weights_regularizer
+        )
+        mu = slim.fully_connected(
+            inputs=h,
+            num_outputs=params.latent_dim,
+            activation_fn=None,
+            scope='encoder_mlp_mu',
+            weights_regularizer=weights_regularizer
+        )
+        logsigma = slim.fully_connected(
+            inputs=h,
+            num_outputs=params.latent_dim,
+            activation_fn=None,
+            scope='encoder_mlp_logsigma',
+            weights_regularizer=weights_regularizer
+        )
+        return mu, logsigma
+
+
+def vae_flat_decoder(latent, vocab_size, params, n, weights_regularizer=None):
+    # latent (N, D)
+    with tf.variable_scope('decoder'):
+        depth = params.tree_depth
+        assert depth >= 0
+        h = slim.fully_connected(
+            latent,
+            num_outputs=params.decoder_dim,
+            scope='projection',
+            activation_fn=None,
+            weights_regularizer=weights_regularizer
+        )
+        h = tf.expand_dims(h, axis=0)  # (1, N, D)
+        h = tf.tile(h, (params.flat_length, 1, 1))  # (L,N,D)
+        h, _ = lstm(
+            x=h,
+            num_layers=3,
+            num_units=params.decoder_dim,
+            bidirectional=True
+        )
+        h = slim.fully_connected(
+            inputs=h,
+            num_outputs=params.encoder_dim,
+            activation_fn=tf.nn.leaky_relu,
+            scope='decoder_mlp_1',
+            weights_regularizer=weights_regularizer
+        )
+        h = slim.fully_connected(
+            inputs=h,
+            num_outputs=params.encoder_dim,
+            activation_fn=tf.nn.leaky_relu,
+            scope='decoder_mlp_2',
             weights_regularizer=weights_regularizer
         )
         h = slim.fully_connected(
             inputs=h,
             num_outputs=vocab_size + 1,
             activation_fn=None,
-            scope='output_mlp_3',
+            scope='decoder_mlp_3',
             weights_regularizer=weights_regularizer
-        )
-    return h
+        )  # (L,N,V+1)
+        return h
 
 
-def calc_children(x, params, weights_regularizer=None):
-    # X: (N,x, D)
-    # Y: (N,2x,D)
-    with tf.variable_scope('children_mlp', reuse=tf.AUTO_REUSE):
-        h = x
-        h = slim.fully_connected(
-            inputs=h,
-            num_outputs=params.decoder_dim,
-            activation_fn=tf.nn.leaky_relu,
-            scope='output_mlp_1',
-            weights_regularizer=weights_regularizer
-        )
-        h = slim.fully_connected(
-            inputs=h,
-            num_outputs=params.decoder_dim,
-            activation_fn=tf.nn.leaky_relu,
-            scope='output_mlp_2',
-            weights_regularizer=weights_regularizer
-        )
-        h = slim.fully_connected(
-            inputs=h,
-            num_outputs=2 * params.decoder_dim,
-            activation_fn=None,
-            scope='output_mlp_3',
-            weights_regularizer=weights_regularizer
-        )
-        kids = tf.reshape(h, (tf.shape(h)[0], 2 * h.shape[1].value, params.decoder_dim))  # params.decoder_dim))
-        print("Calc child: {}->{}".format(x, kids))
-        return kids
-
-
-def infix_indices(depth, stack=[]):
-    if depth >= 0:
-        left = infix_indices(depth - 1, stack + [0])
-        right = infix_indices(depth - 1, stack + [1])
-        middle = stack
-        return left + [middle] + right
-    else:
-        return []
-
-
-def stack_tree(outputs, indices):
-    # outputs:[ (N,V), (N,2,V), (N,2,2,V)...]
-    # indices:[ paths]
-
-    slices = []
-    for idx in indices:
-        depth = len(idx)
-        output = outputs[depth]
-        output_idx = 0
-        mult = 1
-        for i in reversed(idx):
-            output_idx += mult * i
-            mult *= 2
-        slices.append(output[:, output_idx, :])
-    stacked = tf.stack(slices, axis=0)  # (L,N,V)
-    return stacked
-
-
-def vae_decoder(latent, vocab_size, params, weights_regularizer=None):
-    # latent (N, D)
-    depth = params.tree_depth
-    assert depth >= 0
-    h = slim.fully_connected(
-        latent,
-        num_outputs=params.decoder_dim,
-        scope='projection',
-        activation_fn=None,
-        weights_regularizer=weights_regularizer
-    )
-    h = tf.expand_dims(h, axis=1)
-
-    layers = []
-    layers.append(h)
-    for i in range(depth):
-        h = calc_children(h, params=params, weights_regularizer=weights_regularizer)
-        layers.append(h)
-    return layers
-
-
-def make_model_vae_binary_tree(
+def make_model_vae_ctc_flat(
         run_config,
         vocab
 ):
@@ -168,24 +155,14 @@ def make_model_vae_binary_tree(
 
         # Decoder
         with tf.variable_scope('vae_decoder') as decoder_scope:
-            tree_layers = vae_decoder(
+            logits = vae_flat_decoder(
                 latent=latent_sample,
                 vocab_size=vocab_size,
                 params=params,
-                weights_regularizer=weights_regularizer)
-            indices = infix_indices(depth)
-            flat_layers = stack_tree(tree_layers, indices=indices)  # (L,N,V)
-            logits = calc_output(
-                flat_layers,
-                vocab_size=vocab_size,
-                params=params,
-                weights_regularizer=weights_regularizer)
+                weights_regularizer=weights_regularizer,
+                n=n
+            )
             sequence_length_ctc = tf.tile(tf.shape(logits)[0:1], (n,))
-
-        print("Lengths: {} vs {}".format(len(indices), math.pow(2, depth + 1) - 1))
-        assert len(indices) == int(math.pow(2, depth + 1) - 1)
-        assert max(len(i) for i in indices) == depth
-        assert len(tree_layers) == depth + 1
 
         ctc_labels_sparse = sparsify(tokens, sequence_mask)
         ctc_labels = tf.sparse_tensor_to_dense(ctc_labels_sparse, default_value=-1)
@@ -211,17 +188,13 @@ def make_model_vae_binary_tree(
 
         # Generated data
         with tf.variable_scope(decoder_scope, reuse=True):
-            gtree_layers = vae_decoder(
+            glogits = vae_flat_decoder(
                 latent=latent_prior_sample,
                 vocab_size=vocab_size,
                 params=params,
-                weights_regularizer=weights_regularizer)
-            gflat_layers = stack_tree(gtree_layers, indices=indices)  # (L,N,V)
-            glogits = calc_output(
-                gflat_layers,
-                vocab_size=vocab_size,
-                params=params,
-                weights_regularizer=weights_regularizer)
+                weights_regularizer=weights_regularizer,
+                n=n
+            )
 
         autoencode_hook = CTCHook(
             logits=logits,
