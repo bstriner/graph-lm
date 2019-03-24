@@ -4,7 +4,7 @@ import tensorflow as tf
 from tensorflow.contrib import slim
 
 from .attn_util import calc_attn_v2
-from .rnn_util import lstm, sequence_norm
+from .rnn_util import lstm
 from ..callbacks.ctc_callback import CTCHook
 from ..kl import kl
 from ..sparse import sparsify
@@ -38,10 +38,10 @@ def vae_flat_encoder_attn(tokens, token_lengths, vocab_size, params, n, output_l
             ls = tf.linspace(
                 start=tf.constant(0, dtype=tf.float32),
                 stop=tf.constant(1, dtype=tf.float32),
-                num=L) #(L,)
-            ls = tf.tile(tf.expand_dims(ls, 1), [1,n]) # (L,N)
-            ls = ls * tf.cast(L, dtype=tf.float32) / tf.cast(tf.expand_dims(token_lengths,0), dtype=tf.float32)
-            ls = tf.expand_dims(ls, 2) #( L,N,1)
+                num=L)  # (L,)
+            ls = tf.tile(tf.expand_dims(ls, 1), [1, n])  # (L,N)
+            ls = ls * tf.cast(L, dtype=tf.float32) / tf.cast(tf.expand_dims(token_lengths, 0), dtype=tf.float32)
+            ls = tf.expand_dims(ls, 2)  # ( L,N,1)
             h = tf.concat([h, ls], axis=-1)
             hidden_state, hidden_state_final = lstm(
                 x=h,
@@ -90,7 +90,7 @@ def vae_flat_encoder_attn(tokens, token_lengths, vocab_size, params, n, output_l
                 num_units=params.encoder_dim,
                 bidirectional=True
             )  # (O, N, D)
-            #output_hidden = sequence_norm(output_hidden)
+            # output_hidden = sequence_norm(output_hidden)
             output_hidden = slim.batch_norm(inputs=output_hidden, is_training=is_training)
         with tf.variable_scope('encoder_attn'):
             output_proj = slim.fully_connected(
@@ -115,7 +115,7 @@ def vae_flat_encoder_attn(tokens, token_lengths, vocab_size, params, n, output_l
             )  # (n, ol, d)
             h = tf.concat([tf.transpose(input_aligned, (1, 0, 2)), output_hidden], axis=-1)
         with tf.variable_scope('encoder_output'):
-            #h = sequence_norm(h)
+            # h = sequence_norm(h)
             h = slim.batch_norm(h, is_training=is_training)
             h, _ = lstm(
                 x=h,
@@ -139,7 +139,7 @@ def vae_flat_encoder_attn(tokens, token_lengths, vocab_size, params, n, output_l
                 weights_regularizer=weights_regularizer
             )
             """
-            #h = sequence_norm(h)
+            # h = sequence_norm(h)
             h = slim.batch_norm(h, is_training=is_training)
             mu = slim.fully_connected(
                 inputs=h,
@@ -171,7 +171,7 @@ def vae_flat_decoder_attn(latent, vocab_size, params, n, weights_regularizer=Non
         )
         """
         h = latent
-        #h = sequence_norm(h)
+        # h = sequence_norm(h)
         h = slim.batch_norm(h, is_training=is_training)
         h, _ = lstm(
             x=h,
@@ -179,7 +179,7 @@ def vae_flat_decoder_attn(latent, vocab_size, params, n, weights_regularizer=Non
             num_units=params.decoder_dim,
             bidirectional=True
         )
-        #h = sequence_norm(h)
+        # h = sequence_norm(h)
         h = slim.batch_norm(h, is_training=is_training)
         """
         h = slim.fully_connected(
@@ -212,7 +212,8 @@ def vae_flat_decoder_attn(latent, vocab_size, params, n, weights_regularizer=Non
 
 def make_model_vae_ctc_flat_attn(
         run_config,
-        vocab
+        vocab,
+        merge_repeated=False
 ):
     vocab_size = vocab.shape[0]
     print("Vocab size: {}".format(vocab_size))
@@ -276,7 +277,7 @@ def make_model_vae_ctc_flat_attn(
             sequence_length=sequence_length_ctc,
             inputs=logits,
             # sequence_length=tf.shape(logits)[0],
-            # ctc_merge_repeated=False,
+            ctc_merge_repeated=merge_repeated,
             # preprocess_collapse_repeated=False,
             # ctc_merge_repeated=True,
             # ignore_longer_outputs_than_inputs=False,
@@ -303,7 +304,8 @@ def make_model_vae_ctc_flat_attn(
             vocab=vocab,
             path=os.path.join(run_config.model_dir, "autoencoded", "autoencoded-{:08d}.csv"),
             true=ctc_labels,
-            name="Autoencoded"
+            name="Autoencoded",
+            merge_repeated=merge_repeated
         )
         generate_hook = CTCHook(
             logits=glogits,
@@ -311,7 +313,8 @@ def make_model_vae_ctc_flat_attn(
             vocab=vocab,
             path=os.path.join(run_config.model_dir, "generated", "generated-{:08d}.csv"),
             true=ctc_labels,
-            name="Generated"
+            name="Generated",
+            merge_repeated=merge_repeated
         )
         evaluation_hooks = [autoencode_hook, generate_hook]
 
