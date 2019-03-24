@@ -51,7 +51,7 @@ def default_params():
 
         lr=3e-4,
         l2=1e-7,
-        clip_gradient_norm=0.,
+        clip_gradient_norm=1.,
 
         anneal_start=5000,
         anneal_end=100000,
