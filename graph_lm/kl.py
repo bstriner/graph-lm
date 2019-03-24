@@ -1,7 +1,7 @@
 import tensorflow as tf
 import tensorflow_probability as tfp
 
-from .anneal import get_scale
+from .anneal import get_scale_logistic
 
 tfd = tfp.distributions
 
@@ -25,7 +25,7 @@ def kl(mu, logsigma, params, n):
     kl_n = tf.maximum(kl_n, params.kl_min) # (L, N)
     print("kl_n shape: {}".format(kl_n))
     kl_loss_raw = tf.reduce_sum(kl_n) / tf.cast(n, tf.float32)
-    kl_scale = get_scale(params)
+    kl_scale = get_scale_logistic(params)
     kl_loss = kl_loss_raw * kl_scale
 
     tf.summary.scalar("kl_loss_raw", kl_loss_raw)
