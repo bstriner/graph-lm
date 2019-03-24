@@ -213,7 +213,7 @@ def vae_flat_decoder_attn(latent, vocab_size, params, n, weights_regularizer=Non
 def make_model_vae_ctc_flat_attn(
         run_config,
         vocab,
-        merge_repeated=False
+        merge_repeated=True
 ):
     vocab_size = vocab.shape[0]
     print("Vocab size: {}".format(vocab_size))
