@@ -53,8 +53,8 @@ def default_params():
         l2=1e-7,
         clip_gradient_norm=0.,
 
-        anneal_start=10000,
-        anneal_end=40000,
+        anneal_start=5000,
+        anneal_end=20000,
         anneal_min=1e-4,
 
         model_version='v1',
