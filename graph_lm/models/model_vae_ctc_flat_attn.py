@@ -3,14 +3,16 @@ import os
 import tensorflow as tf
 from tensorflow.contrib import slim
 
-from .attn_util import calc_attn
-from .rnn_util import lstm
+from .attn_util import calc_attn_v2
+from .rnn_util import lstm, sequence_norm
 from ..callbacks.ctc_callback import CTCHook
 from ..kl import kl
 from ..sparse import sparsify
+from ..stats import get_bias_ctc
 
 
-def vae_flat_encoder_attn(tokens, token_lengths, vocab_size, params, n, output_length, weights_regularizer=None):
+def vae_flat_encoder_attn(tokens, token_lengths, vocab_size, params, n, output_length, weights_regularizer=None
+                          , is_training=True):
     """
 
     :param tokens: (N,L)
@@ -22,6 +24,7 @@ def vae_flat_encoder_attn(tokens, token_lengths, vocab_size, params, n, output_l
     :param weights_regularizer:
     :return:
     """
+    L = tf.shape(tokens)[1]
     with tf.variable_scope('encoder'):
         with tf.variable_scope('step_1'):
             h = tf.transpose(tokens, (1, 0))  # (L,N)
@@ -32,6 +35,14 @@ def vae_flat_encoder_attn(tokens, token_lengths, vocab_size, params, n, output_l
                 initializer=tf.initializers.truncated_normal(
                     stddev=1. / tf.sqrt(tf.constant(params.encoder_dim, dtype=tf.float32))))
             h = tf.nn.embedding_lookup(embeddings, h)  # (L, N, D)
+            ls = tf.linspace(
+                start=tf.constant(0, dtype=tf.float32),
+                stop=tf.constant(1, dtype=tf.float32),
+                num=L) #(L,)
+            ls = tf.tile(tf.expand_dims(ls, 1), [1,n]) # (L,N)
+            ls = ls * tf.cast(L, dtype=tf.float32) / tf.cast(tf.expand_dims(token_lengths,0), dtype=tf.float32)
+            ls = tf.expand_dims(ls, 2) #( L,N,1)
+            h = tf.concat([h, ls], axis=-1)
             hidden_state, hidden_state_final = lstm(
                 x=h,
                 num_layers=2,
@@ -39,9 +50,10 @@ def vae_flat_encoder_attn(tokens, token_lengths, vocab_size, params, n, output_l
                 bidirectional=True,
                 sequence_lengths=token_lengths
             )
-            h = tf.concat(hidden_state_final, axis=-1)
-            h = tf.transpose(h, (1, 0, 2))  # (N,2,D)
-            h = tf.reshape(h, (n, h.shape[1].value * h.shape[2].value))  # (N, 2D)
+            h = tf.concat(hidden_state_final, axis=-1)  # (layers*directions, N, D)
+            h = tf.transpose(h, (1, 0, 2))  # (N,layers*directions,D)
+            h = tf.reshape(h, (n, h.shape[1].value * h.shape[2].value))  # (N, layers*directions*D)
+            h = slim.batch_norm(inputs=h, is_training=True)
             h = slim.fully_connected(
                 inputs=h,
                 num_outputs=params.encoder_dim,
@@ -49,6 +61,7 @@ def vae_flat_encoder_attn(tokens, token_lengths, vocab_size, params, n, output_l
                 scope='encoder_mlp_1',
                 weights_regularizer=weights_regularizer
             )
+            h = slim.batch_norm(inputs=h, is_training=True)
             """
             h = slim.fully_connected(
                 inputs=h,
@@ -61,19 +74,24 @@ def vae_flat_encoder_attn(tokens, token_lengths, vocab_size, params, n, output_l
             flat_encoding = slim.fully_connected(
                 inputs=h,
                 num_outputs=params.encoder_dim,
-                activation_fn=None,
+                activation_fn=tf.nn.leaky_relu,
                 scope='encoder_mlp_3',
                 weights_regularizer=weights_regularizer
             )  # (N,D)
         with tf.variable_scope('step_2'):
             h = tf.expand_dims(flat_encoding, axis=0)  # (1, N, D)
             h = tf.tile(h, (output_length, 1, 1))  # (O,N,D)
+            ls = tf.linspace(start=-1., stop=1., num=params.flat_length)  # (O,)
+            ls = tf.tile(tf.expand_dims(tf.expand_dims(ls, 1), 2), (1, n, 1))  # (O,N,1)
+            h = tf.concat([h, ls], axis=2)
             output_hidden, _ = lstm(
                 x=h,
                 num_layers=2,
                 num_units=params.encoder_dim,
                 bidirectional=True
             )  # (O, N, D)
+            #output_hidden = sequence_norm(output_hidden)
+            output_hidden = slim.batch_norm(inputs=output_hidden, is_training=is_training)
         with tf.variable_scope('encoder_attn'):
             output_proj = slim.fully_connected(
                 inputs=output_hidden,
@@ -89,7 +107,7 @@ def vae_flat_encoder_attn(tokens, token_lengths, vocab_size, params, n, output_l
                 scope='encoder_input_proj',
                 weights_regularizer=weights_regularizer
             )  # (O,N,D)
-            attn = calc_attn(output_proj, input_proj, token_lengths)  # (n, ol, il)
+            attn = calc_attn_v2(output_proj, input_proj, token_lengths)  # (n, ol, il)
             tf.summary.image('encoder_attention', tf.expand_dims(attn, 3))
             input_aligned = tf.matmul(
                 attn,  # (n, ol, il)
@@ -97,6 +115,8 @@ def vae_flat_encoder_attn(tokens, token_lengths, vocab_size, params, n, output_l
             )  # (n, ol, d)
             h = tf.concat([tf.transpose(input_aligned, (1, 0, 2)), output_hidden], axis=-1)
         with tf.variable_scope('encoder_output'):
+            #h = sequence_norm(h)
+            h = slim.batch_norm(h, is_training=is_training)
             h, _ = lstm(
                 x=h,
                 num_layers=2,
@@ -119,6 +139,8 @@ def vae_flat_encoder_attn(tokens, token_lengths, vocab_size, params, n, output_l
                 weights_regularizer=weights_regularizer
             )
             """
+            #h = sequence_norm(h)
+            h = slim.batch_norm(h, is_training=is_training)
             mu = slim.fully_connected(
                 inputs=h,
                 num_outputs=params.latent_dim,
@@ -136,7 +158,7 @@ def vae_flat_encoder_attn(tokens, token_lengths, vocab_size, params, n, output_l
             return mu, logsigma
 
 
-def vae_flat_decoder_attn(latent, vocab_size, params, n, weights_regularizer=None):
+def vae_flat_decoder_attn(latent, vocab_size, params, n, weights_regularizer=None, is_training=True):
     # latent (N, D)
     with tf.variable_scope('decoder'):
         """
@@ -148,12 +170,17 @@ def vae_flat_decoder_attn(latent, vocab_size, params, n, weights_regularizer=Non
             weights_regularizer=weights_regularizer
         )
         """
+        h = latent
+        #h = sequence_norm(h)
+        h = slim.batch_norm(h, is_training=is_training)
         h, _ = lstm(
-            x=latent,
+            x=h,
             num_layers=3,
             num_units=params.decoder_dim,
             bidirectional=True
         )
+        #h = sequence_norm(h)
+        h = slim.batch_norm(h, is_training=is_training)
         """
         h = slim.fully_connected(
             inputs=h,
@@ -175,7 +202,10 @@ def vae_flat_decoder_attn(latent, vocab_size, params, n, weights_regularizer=Non
             num_outputs=vocab_size + 1,
             activation_fn=None,
             scope='decoder_mlp_3',
-            weights_regularizer=weights_regularizer
+            weights_regularizer=weights_regularizer,
+            biases_initializer=tf.initializers.constant(
+                value=get_bias_ctc(average_output_length=params.flat_length, smoothing=params.bias_smoothing),
+                verify_shape=True)
         )  # (L,N,V+1)
         return h
 
@@ -215,14 +245,15 @@ def make_model_vae_ctc_flat_attn(
             params=params,
             n=n,
             weights_regularizer=weights_regularizer,
-            output_length=params.flat_length
+            output_length=params.flat_length,
+            is_training=is_training
         )
         # Sampling
         latent_sample, latent_prior_sample = kl(
             mu=mu,
             logsigma=logsigma,
             params=params,
-            n=n)
+            n=n)  # (L,N,D)
 
         # Decoder
         with tf.variable_scope('vae_decoder') as decoder_scope:
@@ -231,7 +262,8 @@ def make_model_vae_ctc_flat_attn(
                 vocab_size=vocab_size,
                 params=params,
                 weights_regularizer=weights_regularizer,
-                n=n
+                n=n,
+                is_training=is_training
             )
             sequence_length_ctc = tf.tile([params.flat_length], (n,))  # tf.shape(logits)[0:1], (n,))
 
@@ -244,7 +276,7 @@ def make_model_vae_ctc_flat_attn(
             sequence_length=sequence_length_ctc,
             inputs=logits,
             # sequence_length=tf.shape(logits)[0],
-            ctc_merge_repeated=False,
+            # ctc_merge_repeated=False,
             # preprocess_collapse_repeated=False,
             # ctc_merge_repeated=True,
             # ignore_longer_outputs_than_inputs=False,

@@ -1,28 +1,27 @@
 """
-Train on PTB
 
-ssh -L 6006:localhost:6006 ben@unity
-docker run -it -v /mnt/data/projects/graph-lm/output:/tb -p 6006:6006 tensorflow/tensorflow tensorboard --logdir /tb
+NLL: 6.125174522399902
+Wordcount: 965000
+Sentences: 39367
+nll_per_sent: 150.14588928222656
+average_length: 24.512916564941406
+max_length: 275
+assert wordcount: 965000
 """
 
 import tensorflow as tf
 
-import graph_lm.trainer
+from graph_lm.stats import calc_bias
 
 
-def main(argv):
-    graph_lm.trainer.train()
+def main(_argv):
+    calc_bias(smoothing=0.05)
 
 
 if __name__ == '__main__':
     tf.logging.set_verbosity(tf.logging.INFO)
     tf.flags.DEFINE_string('data_dir', '../../data/eng_news_txt_tbnk-data', 'Data directory')
-    tf.flags.DEFINE_string('model_dir', '../../output/ptb/flat-attn/v25-nokl-anneal-1e-4', 'Data directory')
-    # tf.flags.DEFINE_string('config', 'config/vae_binary_tree.json', 'Data directory')
-    # tf.flags.DEFINE_string('config', 'config/vae_ctc_flat.json', 'Data directory')
-    tf.flags.DEFINE_string('config', 'config/vae_ctc_flat_attn.json', 'Data directory')
-    tf.flags.DEFINE_string('schedule', 'train_and_evaluate', 'Schedule')
-    tf.flags.DEFINE_integer('batch_size', 32, 'Batch size')
+    tf.flags.DEFINE_integer('batch_size', 16, 'Batch size')
     tf.flags.DEFINE_integer('capacity', 4000, 'capacity')
     tf.flags.DEFINE_integer('max_steps', 100000, 'max_steps')
     tf.flags.DEFINE_integer('eval_steps', 100, 'max_steps')
@@ -30,8 +29,6 @@ if __name__ == '__main__':
     tf.flags.DEFINE_integer('shuffle_buffer_size', 1000, 'min_after_dequeue')
     tf.flags.DEFINE_integer('prefetch_buffer_size', 1000, 'min_after_dequeue')
     tf.flags.DEFINE_integer('num_parallel_calls', 4, 'min_after_dequeue')
-    tf.flags.DEFINE_integer('grid_size', 10, 'grid_size')
     tf.flags.DEFINE_integer('queue_threads', 2, 'queue_threads')
     tf.flags.DEFINE_integer('save_checkpoints_steps', 2000, 'save_checkpoints_secs')
-    tf.flags.DEFINE_string('hparams', '', 'Hyperparameters')
     tf.app.run()

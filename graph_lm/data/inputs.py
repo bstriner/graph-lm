@@ -5,6 +5,9 @@ import tensorflow as tf
 # from tensorflow.contrib.data.python.ops.batching import map_and_batch
 # from tensorflow.contrib.data.python.ops.shuffle_ops import shuffle_and_repeat
 
+TRAIN=0
+VAL =1
+TEST=2
 FILES = ['train', 'val', 'test']
 RECORDS = ["{}.tfrecords".format(f) for f in FILES]
 VOCAB_FILE = 'vocab.npy'
@@ -82,12 +85,12 @@ def make_input_fn(data_files, batch_size, shuffle=True, num_epochs=None):
 
 def make_input_fns(data_dir, batch_size):
     train_fn = make_input_fn(
-        [os.path.join(data_dir, RECORDS[0])],
+        [os.path.join(data_dir, RECORDS[TRAIN])],
         batch_size=batch_size, shuffle=True, num_epochs=None)
     val_fn = make_input_fn(
-        [os.path.join(data_dir, RECORDS[1])],
+        [os.path.join(data_dir, RECORDS[VAL])],
         batch_size=batch_size, shuffle=True, num_epochs=None)
     test_fn = make_input_fn(
-        [os.path.join(data_dir, RECORDS[2])],
+        [os.path.join(data_dir, RECORDS[TEST])],
         batch_size=batch_size, shuffle=True, num_epochs=None)
     return train_fn, val_fn, test_fn

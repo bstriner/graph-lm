@@ -37,3 +37,15 @@ def lstm(x, num_layers, num_units, scope='lstm', sequence_lengths=None, dropout=
         )
         ret = lstm(x, sequence_lengths=sequence_lengths, initial_state=initial_states)
         return ret
+
+def sequence_norm(x, epsilon=1e-5):
+    """
+
+    :param x: (L, N, D)
+    :return:
+    """
+    ex = tf.reduce_mean(x, axis=0, keepdims=True) #(1, N, D)
+    h = x-ex
+    sx = tf.sqrt(tf.reduce_mean(tf.square(h), axis=0, keepdims=True)) #(1,N,D)
+    h = h / tf.maximum(sx, epsilon)
+    return h

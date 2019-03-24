@@ -39,20 +39,22 @@ def default_params():
     return HParams(
         model='ctasdsac',
 
-        encoder_dim=512,
-        decoder_dim=512,
-        latent_dim=320,
-        attention_dim=256,
+        encoder_dim=256,
+        decoder_dim=256,
+        latent_dim=256,
+        attention_dim=128,
+
+        bias_smoothing=0.05,
 
         tree_depth=8,
-        flat_length=512,
+        flat_length=300,
 
-        lr=3e-5,
-        l2=1e-8,
-        clip_gradient_norm=1.,
+        lr=3e-4,
+        l2=1e-7,
+        clip_gradient_norm=0.,
 
-        anneal_start=40000,
-        anneal_end=80000,
+        anneal_start=10000,
+        anneal_end=40000,
         anneal_min=1e-4,
 
         model_version='v1',
