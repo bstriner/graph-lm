@@ -54,7 +54,7 @@ def default_params():
         clip_gradient_norm=1.,
 
         anneal_start=5000,
-        anneal_end=100000,
+        anneal_end=200000,
         anneal_min=1e-4,
 
         model_version='v1',
