@@ -3,12 +3,12 @@ import os
 import numpy as np
 import tensorflow as tf
 
-from graph_lm.data.calculate_vocabulary import calculate_wordmap
+from graph_lm.data.calculate_vocabulary import calculate_map
 from graph_lm.data.read_wikitext import FILES, read_wikitext, RECORDS, SPLITS
 from graph_lm.data.write_records import encode_words, write_records
 from graph_lm.data.inputs import make_input_fn
 import numpy as np
-from graph_lm.data.calculate_vocabulary import calculate_wordmap, decode_words
+from graph_lm.data.calculate_vocabulary import calculate_map, decode_words
 
 def main(argv):
     data_files = [os.path.join(tf.flags.FLAGS.data_dir, f) for f in RECORDS]

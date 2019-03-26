@@ -3,7 +3,7 @@ import os
 
 import numpy as np
 
-from graph_lm.data.calculate_vocabulary import calculate_vocabulary, calculate_wordmap
+from graph_lm.data.calculate_vocabulary import calculate_vocabulary, calculate_map
 from graph_lm.data.inputs import RECORDS
 from graph_lm.data.write_records import encode_words, write_records
 
@@ -41,7 +41,7 @@ def preprocessing(data_words, output_dir, min_count=0):
     np.save(os.path.join(output_dir, "vocab.npy"), vocab)
     print("Vocabulary size: {}".format(vocab.size))
 
-    wordmap = calculate_wordmap(vocab)
+    wordmap = calculate_map(vocab)
     data_encoded = [encode_words(sentences, wordmap) for sentences in data_words]
     for f, d in zip(RECORDS, data_encoded):
         write_records(data=d, output_file=os.path.join(output_dir, f))
