@@ -11,7 +11,6 @@ def calculate_wordmap(vocab):
 def decode_words(ids, vocab):
     return " ".join(vocab[i] if i < len(vocab) else BLANK for i in ids if i >= 0)
 
-
 def calculate_vocabulary(dataset, min_count=0):
     vocab = Counter()
     for sentence in dataset:

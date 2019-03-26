@@ -11,7 +11,7 @@ from .data.inputs import make_input_fns, VOCAB_FILE
 from .models.model_vae_binary_tree import make_model_vae_binary_tree
 from .models.model_vae_ctc_flat import make_model_vae_ctc_flat
 from .models.model_vae_ctc_flat_attn import make_model_vae_ctc_flat_attn
-
+from .models.model_vae_dag import make_model_vae_dag
 
 def make_model_fn(hparams, run_config, vocab):
     if hparams.model == 'vae_binary_tree':
@@ -20,6 +20,8 @@ def make_model_fn(hparams, run_config, vocab):
         return make_model_vae_ctc_flat(run_config, vocab)
     elif hparams.model == 'vae_ctc_flat_attn':
         return make_model_vae_ctc_flat_attn(run_config, vocab)
+    elif hparams.model == 'vae_dag':
+        return make_model_vae_dag(run_config, vocab)
     else:
         raise ValueError("Unknown model: {}".format(hparams.model))
 

@@ -1,0 +1,12 @@
+{
+  "model": "vae_dag",
+  "kl_anneal_start": 10000,
+  "kl_anneal_end": 100000,
+  "kl_anneal_min": 1e-4,
+  "penalty_anneal_start": 5000,
+  "penalty_anneal_end": 100000,
+  "penalty_anneal_min": 1e-1,
+  "penalty_anneal_max": 10,
+  "series_depth": 8,
+  "message_depth": 8
+}
