@@ -1,14 +1,17 @@
 import os
+from typing import Generator
 from typing import Iterable, List
 
+import dill
 import numpy as np
 import tensorflow as tf
 from tensorflow.core.example.feature_pb2 import Feature, Features
 from tensorflow.python.lib.io.tf_record import TFRecordWriter
+from tqdm import tqdm
 
 from .calculate_vocabulary import UNK
 from ..parser import Word
-from tqdm import tqdm
+
 
 def encode_words(sentences, wordmap):
     for sentence in sentences:
@@ -38,6 +41,21 @@ def write_records(data, output_file):
             )
 
             writer.write(example.SerializeToString())
+
+
+def write_sentences_parsed(sentences: Iterable[List[Word]], output_file):
+    with open(output_file, 'wb') as f:
+        for sentence in tqdm(sentences, desc="Writing Sentences"):
+            dill.dump(sentence, f)
+
+
+def read_records_parsed(parsed_file) -> Generator[List[Word]]:
+    with open(parsed_file, 'rb') as f:
+        try:
+            while True:
+                yield dill.load(f)
+        except EOFError:
+            raise StopIteration
 
 
 def write_records_parsed(sentences: Iterable[List[Word]], output_file, wordmap, tagmap):
@@ -71,6 +89,7 @@ def write_records_parsed(sentences: Iterable[List[Word]], output_file, wordmap, 
             writer.write(example.SerializeToString())
             it.update(1)
     it.close()
+
 
 def feature_float32(value):
     return Feature(float_list=tf.train.FloatList(value=value.flatten()))
