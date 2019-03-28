@@ -19,7 +19,7 @@ def get_pipeline():
     )
 
 
-def parse_docs(docs: Iterable, nlp: stanfordnlp.Pipeline) -> Generator[List[Word]]:
+def parse_docs(docs: Iterable, nlp: stanfordnlp.Pipeline) -> Generator[List[Word], None, None]:
     for doc in docs:
         parsed = nlp(doc)
         # nlp("Barack Obama was born in Hawaii. He was elected president in 2008.")

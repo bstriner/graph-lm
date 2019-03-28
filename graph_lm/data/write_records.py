@@ -49,7 +49,7 @@ def write_sentences_parsed(sentences: Iterable[List[Word]], output_file):
             dill.dump(sentence, f)
 
 
-def read_records_parsed(parsed_file) -> Generator[List[Word]]:
+def read_records_parsed(parsed_file) -> Generator[List[Word], None, None]:
     with open(parsed_file, 'rb') as f:
         try:
             while True:
