@@ -43,15 +43,12 @@ def tokenize_and_tag(idx, sentence):
   return (idx, tokens, pos_tags, ner_tags, depparse)
 
 class Dictionary:
-  def __init__(self, lowercase=True, remove_punctuation=True,
-               answer_start="ANSWERSTART", answer_end="ANSWEREND"):
+  def __init__(self, lowercase=True, remove_punctuation=True):
     self.index_to_word = []
     self.word_to_index = {}
     self.mutable = True
     self.lowercase = lowercase
     self.remove_punctuation = remove_punctuation
-    self.answer_start = answer_start
-    self.answer_end = answer_end
     self.pad_index = self.add_or_get_index('<pad>')
     self.pos_tags = dict()
     self.ner_tags = dict()
@@ -60,8 +57,6 @@ class Dictionary:
     return len(self.index_to_word)
 
   def add_or_get_index(self, word):
-    if word == self.answer_start or word == self.answer_end:
-      return -1
     # We ignore punctuation symbols
     if self.remove_punctuation:
       if word in string.punctuation:
@@ -90,8 +85,6 @@ class Dictionary:
     return self.ner_tags[ner_tag]
 
   def get_index(self, word):
-    if word == self.answer_start or word == self.answer_end:
-      return -1
     if self.remove_punctuation:
       if word in string.punctuation:
         return None
