@@ -45,7 +45,7 @@ def write_records(data, output_file):
 
 def write_sentences_parsed(sentences: Iterable[List[Word]], output_file):
     with open(output_file, 'wb') as f:
-        for sentence in tqdm(sentences, desc="Writing Sentences"):
+        for sentence in sentences:
             dill.dump(sentence, f)
 
 
@@ -55,14 +55,13 @@ def read_records_parsed(parsed_file) -> Generator[List[Word], None, None]:
             while True:
                 yield dill.load(f)
         except EOFError:
-            raise StopIteration
+            pass
 
 
-def write_records_parsed(sentences: Iterable[List[Word]], output_file, wordmap, tagmap):
+def write_records_parsed(sentences: Iterable[List[Word]], output_file, wordmap, tagmap, total=None):
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
-    it = tqdm(desc="Writing Records")
     with TFRecordWriter(output_file) as writer:
-        for sentence in sentences:
+        for sentence in tqdm(sentences, desc="Writing Records", total=total):
             indices = [word.index for word in sentence]
             text = [wordmap[word.text] if word.text in wordmap else wordmap[UNK] for word in sentence]
             tags = [tagmap[word.tag] if word.tag in tagmap else tagmap[UNK] for word in sentence]
@@ -87,8 +86,6 @@ def write_records_parsed(sentences: Iterable[List[Word]], output_file, wordmap, 
                 feature_lists=tf.train.FeatureLists(feature_list=sequence_features),
             )
             writer.write(example.SerializeToString())
-            it.update(1)
-    it.close()
 
 
 def feature_float32(value):

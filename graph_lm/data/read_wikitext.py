@@ -24,3 +24,14 @@ def read_wikitext_raw(file):
             pass
         else:
             yield line
+
+
+def batch_documents(docs, batch_size=100):
+    stack = []
+    for doc in docs:
+        stack.append(doc)
+        if len(stack) == batch_size:
+            yield "\n\n".join(stack)
+            stack = []
+    if len(stack) > 0:
+        yield "\n\n".join(stack)

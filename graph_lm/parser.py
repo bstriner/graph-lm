@@ -1,15 +1,31 @@
-from typing import Iterable, List, Generator
-
 import stanfordnlp
 import tensorflow as tf
+from stanfordnlp.protobuf.CoreNLP_pb2 import Document
+from stanfordnlp.server.client import CoreNLPClient
+from tqdm import tqdm
+from typing import Generator, Iterable, List
+
+DEPPARSE = "depparse"
+ROOT = "root"
 
 
 class Word(object):
-    def __init__(self, index, text, head, tag):
+    def __init__(self, index, text, head=0, tag=ROOT):
         self.index = index
         self.text = text
         self.head = head
         self.tag = tag
+
+    def __str__(self):
+        return "\"{}\" ({}->{}, {})".format(
+            self.text,
+            self.index,
+            self.head,
+            self.tag
+        )
+
+    def __repr__(self):
+        return str(self)
 
 
 def get_pipeline():
@@ -19,10 +35,15 @@ def get_pipeline():
     )
 
 
-def parse_docs(docs: Iterable, nlp: stanfordnlp.Pipeline) -> Generator[List[Word], None, None]:
-    for doc in docs:
-        parsed = nlp(doc)
-        # nlp("Barack Obama was born in Hawaii. He was elected president in 2008.")
+def get_client():
+    return CoreNLPClient(
+        annotators=[DEPPARSE]
+    )
+
+
+def parse_docs(docs: Iterable, pipeline: stanfordnlp.Pipeline, total=None) -> Generator[List[Word], None, None]:
+    for doc in tqdm(docs, desc="Parsing (pipeline)", total=total):
+        parsed = pipeline(doc)
         for sentence in parsed.sentences:
             words = [
                 Word(
@@ -33,4 +54,26 @@ def parse_docs(docs: Iterable, nlp: stanfordnlp.Pipeline) -> Generator[List[Word
                 )
                 for w in sentence.dependencies
             ]
+            yield words
+
+
+def annotate_client(client: CoreNLPClient, doc: str) -> Document:
+    return client.annotate(text=doc, annotators=[DEPPARSE])
+
+
+def parse_docs_client(docs: Iterable, client: CoreNLPClient, count=None) -> Generator[List[Word], None, None]:
+    for doc in tqdm(docs, total=count, desc="Parsing (client)"):
+        ret = annotate_client(client=client, doc=doc)
+
+        for sentence in ret.sentence:
+            words = []
+            for i, token in enumerate(sentence.token):
+                words.append(Word(
+                    index=i+1,#token.tokenBeginIndex+1,
+                    text=token.word)
+                )
+            for edge in sentence.basicDependencies.edge:
+                word = words[edge.target - 1]
+                word.tag = edge.dep
+                word.head = edge.source
             yield words

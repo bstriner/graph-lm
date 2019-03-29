@@ -25,13 +25,12 @@ def calculate_vocabulary(dataset, min_count=0):
     return vocab
 
 
-def calculate_vocabulary_and_tags(sentences, min_count=0):
+def calculate_vocabulary_and_tags(sentences,total=None, min_count=0):
     vocab = Counter()
     taglist = set()
-    for sentence in tqdm(sentences, desc="Calculating Vocabulary"):
+    for sentence in tqdm(sentences, desc="Calculating Vocabulary", total=total):
         vocab.update(word.text for word in sentence)
         taglist.update(word.tag for word in sentence)
-        # it.update()
     print("Unfiltered vocab: {}".format(len(vocab)))
     vocab = list(k for k, count in vocab.items() if count >= min_count)
     vocab.append(UNK)
