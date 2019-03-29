@@ -14,10 +14,10 @@ from tqdm import tqdm
 # Define URL of running StanfordCoreNLPServer.
 corenlp_url = 'http://localhost:9000'
 max_tries = 1000
-stanford_corenlp = StanfordCoreNLP(corenlp_url)
 
 
 def tokenize_and_tag(idx, sentence):
+  stanford_corenlp = StanfordCoreNLP(corenlp_url)
   tries = 0
   while True:
     try:
@@ -134,6 +134,42 @@ class Data:
                for word in tokenized_text ]
 
   ### Assumption every line is a text
+  def read_from_conll(self, filename, max_articles):
+    input_file = open(filename,'r').readlines()
+    sent_id = 0
+    sentence = []
+    postag = []
+    nertag = []
+    depparse = []
+    for line_id in range(len(input_file)):
+      if input_file[line_id] == "\n":
+        print("\r{} Sentences processed.".format(sent_id+1),end="")
+        self.paras_depparse.append(depparse)
+        self.paras_ner_tags.append(nertag)
+        self.paras_pos_tags.append(postag)
+        self.tokenized_paras.append(sentence)
+        self.tokenized_para_words.append(self.get_ids(sentence))
+        sentence = []
+        postag = []
+        nertag = []
+        depparse = []
+        sent_id += 1
+        
+      else:
+        sent = input_file[line_id].strip().split('\t')
+        sentence.append(sent[1])
+        postag.append(self.dictionary.add_or_get_postag(sent[3]))
+        depparse.append((sent[0],sent[6]))
+        nertag.append(None)
+
+    self.paragraphs = self.tokenized_paras
+    for sent_id,tokenized_para_words in enumerate(self.tokenized_para_words):
+      if tokenized_para_words is not None:
+        self.data.append((tokenized_para_words,self.paras_pos_tags[sent_id],self.paras_ner_tags[sent_id],
+                            self.paras_depparse[sent_id]))
+    print("\nDone")
+
+  ### Assumption every line is a text
   def read_from_file(self, filename, max_articles):
     input_file = open(filename,'r').readlines()
     for para_index, para_text in enumerate(input_file):
@@ -182,7 +218,8 @@ class Data:
 
     for sent_id,tokenized_para_words in enumerate(self.tokenized_para_words):
       if tokenized_para_words is not None:
-        self.data.append((tokenized_para_words,pos_tagged_para,ner_tagged_para,depparse_tagged_para))
+        self.data.append((tokenized_para_words,self.paras_pos_tags[sent_id],self.paras_ner_tags[sent_id],
+                            self.paras_depparse[sent_id]))
     print("Done.")
 
 
@@ -203,6 +240,22 @@ def read_raw_data(input_raw, max_articles, dump_pickles=None):
   print("Vocab size is: {}".format(data.dictionary.size()))
   return data
 
+def read_conll_data(input_conll, max_sentences, dump_pickles=None):
+  data = Data()
+  print("Reading data.")
+  data.read_from_conll(input_conll, max_sentences)
+  print("Done.")
+
+  if dump_pickles is not None:
+    print("Dumping pickles.")
+    data.dump_pickle(dump_pickles)
+    print("Done.")
+
+  print("Finished prepping all required data.")
+  print("Vocab size is: {}".format(data.dictionary.size()))
+  return data
+
+
 if __name__ == "__main__":
-  output=read_raw_data("/project/ocean/sdalmia/projects/pgm/input.txt",10)
-  print("len data = {} and output is {}".format(len(output.data),output.data))
+  output=read_conll_data("/project/ocean/sdalmia/projects/pgm/NeuroNLP2/data/ptb/test.conllu",1000000)
+  print("len data = {}".format(len(output.data)))
