@@ -3,6 +3,7 @@ import os
 import numpy as np
 import tensorflow as tf
 
+from graph_lm.data.inputs import TAG_FILE, VOCAB_FILE
 from graph_lm.data.calculate_vocabulary import calculate_map, calculate_vocabulary_and_tags
 from graph_lm.data.read_wikitext import PARSED, RECORDS, TRAIN
 from graph_lm.data.write_records import read_records_parsed, write_records_parsed
@@ -18,8 +19,8 @@ def main(_argv):
         min_count=tf.flags.FLAGS.min_count)
     wordmap = calculate_map(vocab)
     tagmap = calculate_map(taglist)
-    np.save(os.path.join(tf.flags.FLAGS.output_dir, "vocab.npy"), vocab)
-    np.save(os.path.join(tf.flags.FLAGS.output_dir, "taglist.npy"), taglist)
+    np.save(os.path.join(tf.flags.FLAGS.output_dir, VOCAB_FILE), vocab)
+    np.save(os.path.join(tf.flags.FLAGS.output_dir, TAG_FILE), taglist)
     for f, sentences, total in zip(RECORDS, data_parsed, data_count):
         write_records_parsed(
             sentences=sentences,

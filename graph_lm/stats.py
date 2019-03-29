@@ -11,6 +11,8 @@ TALLY_FILE = 'tally.npz'
 
 def bias_ops(ds: tf.data.Dataset, V):
     features, labels = ds.make_one_shot_iterator().get_next()
+    tokens = features['text']  # (N, L)
+    token_lengths = features['sequence_length']  # (N,)
     vocab_tally = tf.get_local_variable(
         name='vocab_tally',
         dtype=tf.int64,
@@ -19,13 +21,13 @@ def bias_ops(ds: tf.data.Dataset, V):
     )  # (V,)
     word_count = tf.get_local_variable(
         name='word_count',
-        dtype=tf.int32,
+        dtype=token_lengths.dtype,
         initializer=tf.initializers.zeros,
         shape=[]
     )
     max_length = tf.get_local_variable(
         name='max_length',
-        dtype=tf.int32,
+        dtype=token_lengths.dtype,
         initializer=tf.initializers.zeros,
         shape=[]
     )
@@ -35,8 +37,6 @@ def bias_ops(ds: tf.data.Dataset, V):
         initializer=tf.initializers.zeros,
         shape=[]
     )
-    tokens = features['features']  # (N, L)
-    token_lengths = features['feature_length']  # (N,)
     mask = tf.sequence_mask(
         maxlen=tf.shape(tokens)[1],
         lengths=token_lengths
@@ -57,10 +57,10 @@ def bias_ops(ds: tf.data.Dataset, V):
     return vocab_tally, sentence_count, word_count,max_length, update
 
 
-def calc_bias(smoothing=0.01):
+def calc_bias(smoothing=0.01, input_fn = make_input_fn):
     vocab = np.load(os.path.join(tf.flags.FLAGS.data_dir, VOCAB_FILE))
     V = vocab.shape[0]
-    train_input_fn = make_input_fn(
+    train_input_fn = input_fn(
         data_files=[os.path.join(tf.flags.FLAGS.data_dir, RECORDS[TRAIN])],
         batch_size=tf.flags.FLAGS.batch_size,
         shuffle=False,

@@ -66,12 +66,13 @@ def parse_docs_client(docs: Iterable, client: CoreNLPClient, count=None) -> Gene
         ret = annotate_client(client=client, doc=doc)
 
         for sentence in ret.sentence:
+            print(sentence)
             words = []
             for i, token in enumerate(sentence.token):
                 words.append(Word(
                     index=i+1,#token.tokenBeginIndex+1,
-                    text=token.word)
-                )
+                    text=token.word,))
+                #tag=token.pos)                )
             for edge in sentence.basicDependencies.edge:
                 word = words[edge.target - 1]
                 word.tag = edge.dep

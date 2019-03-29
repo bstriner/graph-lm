@@ -1,0 +1,7 @@
+{
+  "model": "vae_dag_supervised",
+  "kl_anneal_start": 10000,
+  "kl_anneal_end": 100000,
+  "kl_anneal_min": 1e-4,
+  "message_depth": 10
+}

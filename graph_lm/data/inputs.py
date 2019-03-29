@@ -5,12 +5,39 @@ import tensorflow as tf
 # from tensorflow.contrib.data.python.ops.batching import map_and_batch
 # from tensorflow.contrib.data.python.ops.shuffle_ops import shuffle_and_repeat
 
-TRAIN=0
-VAL =1
-TEST=2
+TRAIN = 0
+VAL = 1
+TEST = 2
 FILES = ['train', 'val', 'test']
 RECORDS = ["{}.tfrecords".format(f) for f in FILES]
 VOCAB_FILE = 'vocab.npy'
+TAG_FILE = 'vocab.npy'
+
+
+def parse_depparse_example(serialized_example):
+    context_features = {
+        "data_size": tf.FixedLenFeature([1], tf.int64)
+
+    }
+    sequence_features = {
+        'indices': tf.FixedLenSequenceFeature([1], tf.int64),
+        'text': tf.FixedLenSequenceFeature([1], tf.int64),
+        'tags': tf.FixedLenSequenceFeature([1], tf.int64),
+        'heads': tf.FixedLenSequenceFeature([1], tf.int64)
+    }
+
+    context_parse, sequence_parsed = tf.parse_single_sequence_example(
+        serialized_example, context_features, sequence_features
+    )
+    sequence_length = context_parse['data_size']
+    sequence_length = tf.squeeze(sequence_length, -1)
+    # sequence_length = tf.cast(sequence_length, dtype=tf.int32)
+
+    features = {
+        k: tf.squeeze(sequence_parsed[k], -1) for k in sequence_features.keys()
+    }
+    features['sequence_length'] = sequence_length
+    return features, sequence_length
 
 
 def parse_example(serialized_example):
@@ -40,14 +67,14 @@ def parse_example(serialized_example):
     # features = tf.reshape(features, (-1,))
 
     feats = {
-        "features": features,
-        "feature_length": feature_length
+        "text": features,
+        "sequence_length": feature_length
     }
     print(feats)
     return feats, (features, feature_length)
 
 
-def dataset_single(filenames, num_epochs=1, shuffle=True):
+def dataset_single(filenames, num_epochs=1, shuffle=True, parse_fn=parse_example):
     ds = tf.data.TFRecordDataset(filenames=filenames)
     if shuffle:
         ds = ds.apply(tf.data.experimental.shuffle_and_repeat(
@@ -55,20 +82,28 @@ def dataset_single(filenames, num_epochs=1, shuffle=True):
     else:
         ds.repeat(count=num_epochs)
     ds = ds.map(
-        parse_example,
+        parse_fn,
         num_parallel_calls=tf.flags.FLAGS.num_parallel_calls)
     return ds
 
 
-def dataset_batch(ds_single: tf.data.Dataset, batch_size=5):
-    feat_shapes = {
-        "features": [None],
-        "feature_length": [],
-    }
-    label_shapes = [None], []
+DEPPARSE_SHAPE = ({
+                      "sequence_length": [],
+                      'indices': [None],
+                      'text': [None],
+                      'tags': [None],
+                      'heads': [None]
+                  }, [])
+BATCH_SHAPE = ({
+                   "features": [None],
+                   "feature_length": [],
+               }, ([None], []))
+
+
+def dataset_batch(ds_single: tf.data.Dataset, batch_shape, batch_size=5):
     ds = ds_single.padded_batch(
         batch_size=batch_size,
-        padded_shapes=(feat_shapes, label_shapes),
+        padded_shapes=batch_shape,
         drop_remainder=False)
     return ds
 
@@ -76,21 +111,35 @@ def dataset_batch(ds_single: tf.data.Dataset, batch_size=5):
 def make_input_fn(data_files, batch_size, shuffle=True, num_epochs=None):
     def input_fn():
         ds = dataset_single(data_files, shuffle=shuffle, num_epochs=num_epochs)
-        ds = dataset_batch(ds, batch_size=batch_size)
+        ds = dataset_batch(ds, batch_size=batch_size, batch_shape=BATCH_SHAPE)
         ds = ds.prefetch(buffer_size=tf.flags.FLAGS.prefetch_buffer_size)
         return ds
 
     return input_fn
 
 
-def make_input_fns(data_dir, batch_size):
-    train_fn = make_input_fn(
+def make_input_depparse_fn(data_files, batch_size, shuffle=True, num_epochs=None):
+    def input_fn():
+        ds = dataset_single(data_files, shuffle=shuffle, num_epochs=num_epochs, parse_fn=parse_depparse_example)
+        ds = dataset_batch(ds, batch_size=batch_size, batch_shape=DEPPARSE_SHAPE)
+        ds = ds.prefetch(buffer_size=tf.flags.FLAGS.prefetch_buffer_size)
+        return ds
+
+    return input_fn
+
+
+def make_input_fns(data_dir, batch_size, make_input=make_input_fn):
+    train_fn = make_input(
         [os.path.join(data_dir, RECORDS[TRAIN])],
         batch_size=batch_size, shuffle=True, num_epochs=None)
-    val_fn = make_input_fn(
+    val_fn = make_input(
         [os.path.join(data_dir, RECORDS[VAL])],
         batch_size=batch_size, shuffle=True, num_epochs=None)
-    test_fn = make_input_fn(
+    test_fn = make_input(
         [os.path.join(data_dir, RECORDS[TEST])],
         batch_size=batch_size, shuffle=True, num_epochs=None)
     return train_fn, val_fn, test_fn
+
+
+def make_input_depparse_fns(data_dir, batch_size):
+    return make_input_fns(data_dir=data_dir, batch_size=batch_size, make_input=make_input_depparse_fn)
