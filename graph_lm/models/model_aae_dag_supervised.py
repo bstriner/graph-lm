@@ -129,8 +129,9 @@ def make_model_aae_dag_supervised(
         wgan_loss_n = y_real - y_fake
         wgan_loss = tf.reduce_mean(wgan_loss_n)
         wgan_scale = get_kl_scale_logistic(params=params)
-        tf.summary.scalar("wgan_loss", wgan_loss)
         wgan_loss_scaled = wgan_loss*wgan_scale
+        tf.summary.scalar("wgan_loss", wgan_loss)
+        tf.summary.scalar("wgan_scale", wgan_scale)
         tf.summary.scalar("wgan_loss_scaled", wgan_loss_scaled)
 
         aae_reg = tf.losses.get_regularization_loss(scope=aae_scope.name)

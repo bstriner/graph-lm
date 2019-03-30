@@ -1,8 +1,8 @@
 {
   "model": "aae_dag_supervised",
-  "kl_anneal_start": 0,
-  "kl_anneal_end": 0,
-  "kl_anneal_min": 1e-3,
+  "kl_anneal_start": 1000,
+  "kl_anneal_end": 50000,
+  "kl_anneal_min": 0.01,
   "kl_anneal_max": 1.0,
   "message_depth": 10
 }

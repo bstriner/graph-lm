@@ -84,14 +84,15 @@ def build_dag(heads):
     return dag
 
 
-def make_message(inputs, params, fully_connected_fn=slim.fully_connected):
+def make_message(inputs, params, fully_connected_fn=slim.fully_connected, hidden_depth=1):
     h = inputs
-    h = fully_connected_fn(
-        inputs=h,
-        activation_fn=tf.nn.leaky_relu,
-        num_outputs=params.decoder_dim,
-        scope='messages_1'
-    )
+    for i in range(hidden_depth):
+        h = fully_connected_fn(
+            inputs=h,
+            activation_fn=tf.nn.leaky_relu,
+            num_outputs=params.decoder_dim,
+            scope='messages_{}'.format(i)
+        )
     messages = fully_connected_fn(
         inputs=h,
         activation_fn=tf.nn.leaky_relu,
@@ -114,7 +115,7 @@ def pass_messge(messages, dag_bw):
 
 
 def message_passing(
-        latent, dag_bw, params, fully_connected_fn=slim.fully_connected
+        latent, dag_bw, params, fully_connected_fn=slim.fully_connected, hidden_depth=1
 ):
     """
 
@@ -134,7 +135,11 @@ def message_passing(
     for t in range(params.message_depth):
         with tf.variable_scope('messages', reuse=t > 0):
             # print("inputs_{}: {}".format(t, inputs_t))
-            messages_t = make_message(inputs_t, params=params, fully_connected_fn=fully_connected_fn)
+            messages_t = make_message(
+                inputs_t,
+                params=params,
+                fully_connected_fn=fully_connected_fn,
+                hidden_depth=hidden_depth)
             # print("messages1_{}: {}".format(t, messages_t))
             messages_t = pass_messge(messages_t, dag_bw=dag_bw)
             # print("messages2_{}: {}".format(t, messages_t))

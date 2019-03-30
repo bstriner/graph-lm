@@ -29,10 +29,15 @@ def vae_decoder_dag(latent, sequence_lengths, vocab_size, params, n, weights_reg
             params=params
         )
 
-        # dag_bw = tf.transpose(dag, (0, 2, 1))
+        dag_bw = tf.transpose(dag, (0, 2, 1))
         hidden = message_passing(
             latent=latent,
             dag_bw=dag,
+            params=params
+        )
+        hidden = message_passing(
+            latent=hidden,
+            dag_bw=dag_bw,
             params=params
         )
         # hidden (N, L, Dlatent+decoder_dim)
