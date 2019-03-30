@@ -41,7 +41,7 @@ class DAGHook(SessionRunHook):
         n = true.shape[0]
         output_path = self.path.format(step)
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        with open(output_path, 'w', newline='') as f:
+        with open(output_path, 'w', newline='', encoding='utf8') as f:
             w = csv.writer(f)
             w.writerow([
                 'Row',

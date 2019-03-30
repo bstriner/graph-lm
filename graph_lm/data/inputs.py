@@ -6,12 +6,27 @@ import tensorflow as tf
 # from tensorflow.contrib.data.python.ops.shuffle_ops import shuffle_and_repeat
 
 TRAIN = 0
-VAL = 1
+VALID = 1
 TEST = 2
-FILES = ['train', 'val', 'test']
-RECORDS = ["{}.tfrecords".format(f) for f in FILES]
+SPLITS = ['train', 'valid', 'test']
+RECORDS = ["{}.tfrecords".format(f) for f in SPLITS]
+PARSED = ["{}-parsed.dill".format(s) for s in SPLITS]
 VOCAB_FILE = 'vocab.npy'
-TAG_FILE = 'vocab.npy'
+TAG_FILE = 'taglist.npy'
+
+DEPPARSE_SHAPE = (
+    {
+        "sequence_length": [],
+        'indices': [None],
+        'text': [None],
+        'tags': [None],
+        'heads': [None]
+    }, [])
+BATCH_SHAPE = (
+    {
+        "features": [None],
+        "feature_length": [],
+    }, ([None], []))
 
 
 def parse_depparse_example(serialized_example):
@@ -87,19 +102,6 @@ def dataset_single(filenames, num_epochs=1, shuffle=True, parse_fn=parse_example
     return ds
 
 
-DEPPARSE_SHAPE = ({
-                      "sequence_length": [],
-                      'indices': [None],
-                      'text': [None],
-                      'tags': [None],
-                      'heads': [None]
-                  }, [])
-BATCH_SHAPE = ({
-                   "features": [None],
-                   "feature_length": [],
-               }, ([None], []))
-
-
 def dataset_batch(ds_single: tf.data.Dataset, batch_shape, batch_size=5):
     ds = ds_single.padded_batch(
         batch_size=batch_size,
@@ -133,7 +135,7 @@ def make_input_fns(data_dir, batch_size, make_input=make_input_fn):
         [os.path.join(data_dir, RECORDS[TRAIN])],
         batch_size=batch_size, shuffle=True, num_epochs=None)
     val_fn = make_input(
-        [os.path.join(data_dir, RECORDS[VAL])],
+        [os.path.join(data_dir, RECORDS[VALID])],
         batch_size=batch_size, shuffle=True, num_epochs=None)
     test_fn = make_input(
         [os.path.join(data_dir, RECORDS[TEST])],

@@ -13,6 +13,7 @@ from .models.model_vae_ctc_flat import make_model_vae_ctc_flat
 from .models.model_vae_ctc_flat_attn import make_model_vae_ctc_flat_attn
 from .models.model_vae_dag import make_model_vae_dag
 from .models.model_vae_dag_supervised import make_model_vae_dag_supervised
+from .models.model_aae_dag_supervised import make_model_aae_dag_supervised
 
 
 def make_model_fn(hparams, run_config, vocab, taglist):
@@ -26,6 +27,8 @@ def make_model_fn(hparams, run_config, vocab, taglist):
         return make_model_vae_dag(run_config, vocab)
     elif hparams.model == 'vae_dag_supervised':
         return make_model_vae_dag_supervised(run_config, vocab=vocab, taglist=taglist)
+    elif hparams.model == 'aae_dag_supervised':
+        return make_model_aae_dag_supervised(run_config, vocab=vocab, taglist=taglist)
     else:
         raise ValueError("Unknown model: {}".format(hparams.model))
 

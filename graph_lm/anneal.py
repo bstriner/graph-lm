@@ -14,7 +14,7 @@ def get_kl_scale_logistic(params):
         anneal_start=params.kl_anneal_start,
         anneal_end=params.kl_anneal_end,
         anneal_min=params.kl_anneal_min,
-        anneal_max=1.
+        anneal_max=params.kl_anneal_max
     )
 
 
@@ -28,10 +28,13 @@ def get_penalty_scale_logistic(params):
 
 
 def get_anneal_scale_logistic(anneal_start, anneal_end, anneal_min, anneal_max):
-    mid = (anneal_end + anneal_start) / 2
-    mult = (anneal_end - anneal_start) / 16
-    scale = (tf.cast(tf.train.get_or_create_global_step(), tf.float32) - mid) / mult
-    scale = tf.nn.sigmoid(scale)
-    anneal_scale = anneal_max - anneal_min
-    scale = (scale * anneal_scale) + anneal_min
-    return scale
+    if anneal_end > 0:
+        mid = (anneal_end + anneal_start) / 2
+        mult = (anneal_end - anneal_start) / 16
+        scale = (tf.cast(tf.train.get_or_create_global_step(), tf.float32) - mid) / mult
+        scale = tf.nn.sigmoid(scale)
+        anneal_scale = anneal_max - anneal_min
+        scale = (scale * anneal_scale) + anneal_min
+        return scale
+    else:
+        return tf.constant(anneal_max, dtype=tf.float32, name='constant_scale')

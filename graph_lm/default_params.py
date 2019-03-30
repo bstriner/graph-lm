@@ -43,13 +43,15 @@ def default_params():
         decoder_dim=256,
         latent_dim=256,
         attention_dim=128,
+        noise_dim=256,
 
         bias_smoothing=0.05,
 
         tree_depth=8,
         flat_length=300,
-
+        discriminator_steps=5,
         lr=3e-5,
+        dis_lr=3e-5,
         l2=1e-7,
         clip_gradient_norm=1.,
         series_depth=8,
@@ -59,6 +61,7 @@ def default_params():
         kl_anneal_start=5000,
         kl_anneal_end=200000,
         kl_anneal_min=1e-4,
+        kl_anneal_max=1.,
         penalty_anneal_start=5000,
         penalty_anneal_end=200000,
         penalty_anneal_min=1e-4,

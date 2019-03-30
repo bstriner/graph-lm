@@ -17,8 +17,8 @@ def main(argv):
 if __name__ == '__main__':
     tf.logging.set_verbosity(tf.logging.INFO)
     tf.flags.DEFINE_string('data_dir', '../../data/wikitext-2', 'Data directory')
-    tf.flags.DEFINE_string('model_dir', '../../output/wikitext-2/vae-dag-supervised/v3', 'Data directory')
-    tf.flags.DEFINE_string('config', 'config/vae_dag_supervised.json', 'Data directory')
+    tf.flags.DEFINE_string('model_dir', '../../output/wikitext-2/aae_dag_supervised/v5', 'Data directory')
+    tf.flags.DEFINE_string('config', 'config/aae_dag_supervised.json', 'Data directory')
     tf.flags.DEFINE_string('schedule', 'train_and_evaluate', 'Schedule')
     tf.flags.DEFINE_integer('batch_size', 32, 'Batch size')
     tf.flags.DEFINE_integer('capacity', 4000, 'capacity')

@@ -1,11 +1,7 @@
-TRAIN = 0
-VALID = 1
-TEST = 2
-SPLITS = ['train', 'valid', 'test']
-FILES = ["wiki.{}.tokens".format(s) for s in SPLITS]
-FILES_RAW = ["wiki.{}.raw".format(s) for s in SPLITS]
-RECORDS = ["{}.tfrecords".format(s) for s in SPLITS]
-PARSED = ["{}-parsed.dill".format(s) for s in SPLITS]
+from .inputs import SPLITS
+
+WIKITEXT_FILES = ["wiki.{}.tokens".format(s) for s in SPLITS]
+WIKITEXT_FILES_RAW = ["wiki.{}.raw".format(s) for s in SPLITS]
 
 
 def read_wikitext(file):

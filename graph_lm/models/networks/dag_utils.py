@@ -1,9 +1,6 @@
 import tensorflow as tf
 from tensorflow.contrib import slim
 
-from ..rnn_util import lstm
-from ...stats import get_bias
-
 
 def make_dag(latent, sequence_lengths, params):
     """
@@ -75,26 +72,27 @@ def make_dag(latent, sequence_lengths, params):
     penalty = tf.check_numerics(penalty, message='penalty numerics')
     return dag, penalty
 
+
 def build_dag(heads):
     """
     :param heads: (N, L)
     :return:
     """
     l = tf.shape(heads)[1]
-    dag = tf.one_hot(heads, depth=l+1, axis=2)
-    dag = dag[:,:, 1:]
+    dag = tf.one_hot(heads, depth=l + 1, axis=2)
+    dag = dag[:, :, 1:]
     return dag
 
 
-def make_message(inputs, params):
+def make_message(inputs, params, fully_connected_fn=slim.fully_connected):
     h = inputs
-    h = slim.fully_connected(
+    h = fully_connected_fn(
         inputs=h,
         activation_fn=tf.nn.leaky_relu,
         num_outputs=params.decoder_dim,
         scope='messages_1'
     )
-    messages = slim.fully_connected(
+    messages = fully_connected_fn(
         inputs=h,
         activation_fn=tf.nn.leaky_relu,
         num_outputs=params.decoder_dim,
@@ -116,7 +114,7 @@ def pass_messge(messages, dag_bw):
 
 
 def message_passing(
-        latent, dag_bw, params
+        latent, dag_bw, params, fully_connected_fn=slim.fully_connected
 ):
     """
 
@@ -136,7 +134,7 @@ def message_passing(
     for t in range(params.message_depth):
         with tf.variable_scope('messages', reuse=t > 0):
             # print("inputs_{}: {}".format(t, inputs_t))
-            messages_t = make_message(inputs_t, params=params)
+            messages_t = make_message(inputs_t, params=params, fully_connected_fn=fully_connected_fn)
             # print("messages1_{}: {}".format(t, messages_t))
             messages_t = pass_messge(messages_t, dag_bw=dag_bw)
             # print("messages2_{}: {}".format(t, messages_t))
