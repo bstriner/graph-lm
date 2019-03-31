@@ -3,16 +3,16 @@ import os
 import tensorflow as tf
 from tensorflow.contrib import slim
 
-from .model_vae_ctc_flat import vae_flat_encoder
-from .networks.decoder_binary_tree import decoder_binary_tree
+from .networks.decoder_bintree_attention import decoder_bintree_attention
+from .networks.encoder_bintree_attention import encoder_bintree_attn
 from ..callbacks.ctc_callback import CTCHook
 from ..data.word import SENTENCE_LENGTH
-from ..kl import kl
+from ..kl import kl_array
 from ..sparse import sparsify
 import math
 
 
-def make_model_vae_binary_tree(
+def make_model_vae_binary_tree_attn(
         run_config,
         vocabs
 ):
@@ -51,7 +51,7 @@ def make_model_vae_binary_tree(
             weights_regularizer = None
 
         # Encoder
-        mu, logsigma = vae_flat_encoder(
+        mus, logsigmas = encoder_bintree_attn(
             tokens=tokens,
             token_lengths=token_lengths,
             vocab_size=vocab_size,
@@ -61,16 +61,15 @@ def make_model_vae_binary_tree(
             is_training=is_training
         )
         # Sampling
-        latent_sample, latent_prior_sample = kl(
-            mu=mu,
-            logsigma=logsigma,
+        latent_sample, latent_prior_sample = kl_array(
+            mus=mus,
+            logsigmas=logsigmas,
             params=params,
             n=n)
-
         # Decoder
         with tf.variable_scope('vae_decoder') as decoder_scope:
-            tree_layers, logits = decoder_binary_tree(
-                latent=latent_sample,
+            tree_layers, logits = decoder_bintree_attention(
+                latent_layers=latent_sample,
                 vocab_size=vocab_size,
                 params=params,
                 weights_regularizer=weights_regularizer,
@@ -106,12 +105,12 @@ def make_model_vae_binary_tree(
 
         # Generated data
         with tf.variable_scope(decoder_scope, reuse=True):
-            gtree_layers, glogits = decoder_binary_tree(
-                latent=latent_prior_sample,
+            gtree_layers, glogits = decoder_bintree_attention(
+                latent_layers=latent_prior_sample,
                 vocab_size=vocab_size,
                 params=params,
                 weights_regularizer=weights_regularizer,
-                is_training=False)
+                is_training=is_training)  # (L,N,D)
 
         autoencode_hook = CTCHook(
             logits=logits,

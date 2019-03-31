@@ -4,7 +4,7 @@ from tensorflow.contrib import slim
 from ..rnn_util import lstm
 
 
-def vae_flat_encoder(tokens, token_lengths, vocab_size, params, n, weights_regularizer=None):
+def vae_flat_encoder(tokens, token_lengths, vocab_size, params, n, weights_regularizer=None, is_training=True):
     with tf.variable_scope('encoder'):
         h = tf.transpose(tokens, (1, 0))  # (L,N)
         embeddings = tf.get_variable(
@@ -43,6 +43,7 @@ def vae_flat_encoder(tokens, token_lengths, vocab_size, params, n, weights_regul
             scope='encoder_mlp_2',
             weights_regularizer=weights_regularizer
         )
+        h = slim.batch_norm(h, is_training=is_training)
         mu = slim.fully_connected(
             inputs=h,
             num_outputs=params.latent_dim,

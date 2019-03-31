@@ -42,14 +42,22 @@ def calc_attn(a, b, b_lengths):
     return arr_out.stack()  # (n, al, bl)
 
 
-def calc_attn_v2(a, b, b_lengths):
+def calc_attn_v2(a, b, b_lengths, a_transpose=True, b_transpose=True):
     # a: (la,n, d)
     # b: (lb,n, d)
     # b_lengths: (n,)
-    n = tf.shape(b)[1]
-    bl = tf.shape(b)[0]
-    a_ta = tf.TensorArray(size=n, dtype=a.dtype).unstack(tf.transpose(a, (1, 0, 2)))  # (n, la, d)
-    b_ta = tf.TensorArray(size=n, dtype=b.dtype).unstack(tf.transpose(b, (1, 0, 2)))  # (n, lb, d)
+    if a_transpose:
+        n = tf.shape(a)[1]
+        a_ta = tf.TensorArray(size=n, dtype=a.dtype).unstack(tf.transpose(a, (1, 0, 2)))  # (n, la, d)
+    else:
+        n = tf.shape(a)[0]
+        a_ta = tf.TensorArray(size=n, dtype=a.dtype).unstack(a)  # (n, la, d)
+    if b_transpose:
+        bl = tf.shape(b)[0]
+        b_ta = tf.TensorArray(size=n, dtype=b.dtype).unstack(tf.transpose(b, (1, 0, 2)))  # (n, lb, d)
+    else:
+        bl = tf.shape(b)[1]
+        b_ta = tf.TensorArray(size=n, dtype=b.dtype).unstack(b)  # (n, lb, d)
     b_lengths_ta = tf.TensorArray(size=n, dtype=b_lengths.dtype).unstack(b_lengths)  # (n,)
 
     def cond(i, arr):

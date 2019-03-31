@@ -14,11 +14,14 @@ from .models.model_vae_ctc_flat import make_model_vae_ctc_flat
 from .models.model_vae_ctc_flat_attn import make_model_vae_ctc_flat_attn
 from .models.model_vae_dag import make_model_vae_dag
 from .models.model_vae_dag_supervised import make_model_vae_dag_supervised
+from .models.model_vae_binary_tree_attn import make_model_vae_binary_tree_attn
 
 
 def make_model_fn(hparams, run_config, vocabs):
     if hparams.model == 'vae_binary_tree':
         return make_model_vae_binary_tree(run_config, vocabs)
+    elif hparams.model == 'vae_binary_tree_attn':
+        return make_model_vae_binary_tree_attn(run_config, vocabs)
     elif hparams.model == 'vae_ctc_flat':
         return make_model_vae_ctc_flat(run_config, vocabs)
     elif hparams.model == 'vae_ctc_flat_attn':

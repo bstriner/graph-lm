@@ -12,6 +12,7 @@ PTB_FILES = [
     'train.conllu', 'dev.conllu', 'test.conllu'
 ]
 
+
 def main(_argv):
     min_counts = {
         'text': tf.flags.FLAGS.min_count,

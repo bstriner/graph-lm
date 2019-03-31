@@ -45,6 +45,8 @@ def default_params():
         attention_dim=128,
         noise_dim=256,
 
+        batch_norm=False,
+
         bias_smoothing=0.05,
 
         tree_depth=8,

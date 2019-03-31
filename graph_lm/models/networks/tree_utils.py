@@ -1,4 +1,5 @@
 import tensorflow as tf
+import math
 
 
 def infix_indices(depth, stack=[]):
@@ -6,7 +7,9 @@ def infix_indices(depth, stack=[]):
         left = infix_indices(depth - 1, stack + [0])
         right = infix_indices(depth - 1, stack + [1])
         middle = stack
-        return left + [middle] + right
+        indices = left + [middle] + right
+        assert len(indices) == int(math.pow(2, depth + 1) - 1)
+        return indices
     else:
         return []
 
