@@ -13,6 +13,7 @@ INT_FIELDS = [
     'index',
     'head'
 ]
+ALL_FIELDS = TEXT_FIELDS+INT_FIELDS
 SENTENCE_LENGTH = 'sentence_length'
 
 

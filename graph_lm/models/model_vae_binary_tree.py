@@ -6,30 +6,41 @@ from tensorflow.contrib import slim
 from .model_vae_ctc_flat import vae_flat_encoder
 from .networks.decoder_binary_tree import decoder_binary_tree
 from ..callbacks.ctc_callback import CTCHook
+from ..data.word import SENTENCE_LENGTH
 from ..kl import kl
 from ..sparse import sparsify
 
 
 def make_model_vae_binary_tree(
         run_config,
-        vocab
+        vocabs
 ):
+    vocab = vocabs['text']
     vocab_size = vocab.shape[0]
     print("Vocab size: {}".format(vocab_size))
 
     def model_fn(features, labels, mode, params):
         is_training = mode == tf.estimator.ModeKeys.TRAIN
         # Inputs
-        tokens = features['features']  # (N, L)
-        token_lengths = features['feature_length']  # (N,)
+        tokens = features['text']  # (N, L)
+        token_lengths = features[SENTENCE_LENGTH]  # (N,)
         sequence_mask = tf.sequence_mask(maxlen=tf.shape(tokens)[1], lengths=token_lengths)
         n = tf.shape(tokens)[0]
         depth = params.tree_depth
 
         with tf.control_dependencies([
-            tf.assert_greater_equal(tf.pow(2, depth + 1) - 1, token_lengths, message="Tokens longer than tree size"),
-            tf.assert_less_equal(tokens, vocab_size - 1, message="Tokens larger than vocab"),
-            tf.assert_greater_equal(tokens, 0, message="Tokens less than 0")
+            tf.assert_greater_equal(
+                tf.cast(tf.pow(2, depth + 1) - 1, dtype=token_lengths.dtype),
+                token_lengths,
+                message="Tokens longer than tree size"),
+            tf.assert_less_equal(
+                tokens,
+                tf.cast(vocab_size - 1, tokens.dtype),
+                message="Tokens larger than vocab"),
+            tf.assert_greater_equal(
+                tokens,
+                tf.constant(0, dtype=tokens.dtype),
+                message="Tokens less than 0")
         ]):
             tokens = tf.identity(tokens)
 
@@ -68,7 +79,7 @@ def make_model_vae_binary_tree(
         # assert len(tree_layers) == depth + 1
 
         sequence_length_ctc = tf.tile(tf.shape(logits)[0:1], (n,))
-        ctc_labels_sparse = sparsify(tokens, sequence_mask)
+        ctc_labels_sparse = sparsify(tf.cast(tokens, tf.int32),sequence_mask)
         ctc_labels = tf.sparse_tensor_to_dense(ctc_labels_sparse, default_value=-1)
         # ctc_labels = tf.sparse_transpose(ctc_labels, (1,0))
         print("Labels: {}".format(ctc_labels))

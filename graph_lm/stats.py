@@ -4,15 +4,16 @@ import numpy as np
 import tensorflow as tf
 from tqdm import tqdm
 
-from .data.inputs import RECORDS, TRAIN, VOCAB_FILE, make_input_fn
-
+from .data.calculate_vocab import read_vocablists
+from .data.inputs import RECORDS, TRAIN, make_input_fn
+from .data.word import SENTENCE_LENGTH
 TALLY_FILE = 'tally.npz'
 
 
 def bias_ops(ds: tf.data.Dataset, V):
     features, labels = ds.make_one_shot_iterator().get_next()
     tokens = features['text']  # (N, L)
-    token_lengths = features['sequence_length']  # (N,)
+    token_lengths = features[SENTENCE_LENGTH]  # (N,)
     vocab_tally = tf.get_local_variable(
         name='vocab_tally',
         dtype=tf.int64,
@@ -54,11 +55,13 @@ def bias_ops(ds: tf.data.Dataset, V):
         tf.reduce_max(token_lengths)
     ))
     update = tf.group(update_tally, update_sentence_count, update_word_count, update_max_length)
-    return vocab_tally, sentence_count, word_count,max_length, update
+    return vocab_tally, sentence_count, word_count, max_length, update
 
 
-def calc_bias(smoothing=0.01, input_fn = make_input_fn):
-    vocab = np.load(os.path.join(tf.flags.FLAGS.data_dir, VOCAB_FILE))
+def calc_bias(smoothing=0.01, input_fn=make_input_fn):
+    # vocab = np.load(os.path.join(tf.flags.FLAGS.data_dir, VOCAB_FILE))
+    vocabs = read_vocablists(path=tf.flags.FLAGS.data_dir)
+    vocab=vocabs['text']
     V = vocab.shape[0]
     train_input_fn = input_fn(
         data_files=[os.path.join(tf.flags.FLAGS.data_dir, RECORDS[TRAIN])],
@@ -78,7 +81,6 @@ def calc_bias(smoothing=0.01, input_fn = make_input_fn):
             pass
         it.close()
         tally, sents, words, max_length = sess.run([tally_op, sents_op, words_op, max_length_op])
-
 
     p = tally.astype(np.float32)
     p = p / np.sum(p)
@@ -103,7 +105,7 @@ def calc_bias(smoothing=0.01, input_fn = make_input_fn):
 
 def get_bias(smoothing=0.01):
     data = np.load(os.path.join(tf.flags.FLAGS.data_dir, TALLY_FILE))
-    tally=data['tally']
+    tally = data['tally']
     V = tally.shape[0]
     p = tally.astype(np.float32)
     p = p / np.sum(p)
@@ -116,19 +118,19 @@ def get_bias(smoothing=0.01):
 
 def get_bias_ctc(average_output_length, smoothing=0.01):
     data = np.load(os.path.join(tf.flags.FLAGS.data_dir, TALLY_FILE))
-    tally=data['tally']
-    average_length=data['average_length']
+    tally = data['tally']
+    average_length = data['average_length']
 
     V = tally.shape[0]
     p = tally.astype(np.float32)
     p = p / np.sum(p)
     if smoothing > 0:
         p = ((1 - smoothing) * p) + ((1. / V) * smoothing)
-    p_blank = 1. - (average_length/average_output_length)
+    p_blank = 1. - (average_length / average_output_length)
     assert p_blank > 0
     assert p_blank < 1
     print("p_blank: {}".format(p_blank))
-    p_all = np.concatenate([p*(1-p_blank), [p_blank]], axis=0)
+    p_all = np.concatenate([p * (1 - p_blank), [p_blank]], axis=0)
     bias = np.log(p_all)
     bias = bias - np.max(bias)
     return bias

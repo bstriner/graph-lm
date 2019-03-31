@@ -1,12 +1,12 @@
 """
-
-NLL: 6.125174522399902
-Wordcount: 965000
-Sentences: 39367
-nll_per_sent: 150.14588928222656
-average_length: 24.512916564941406
+new splits from Sid
+NLL: 6.2501068115234375
+Wordcount: 929435
+Sentences: 37947
+nll_per_sent: 153.08372497558594
+average_length: 24.492977142333984
 max_length: 275
-assert wordcount: 965000
+assert wordcount: 929435
 """
 
 import tensorflow as tf
@@ -20,7 +20,7 @@ def main(_argv):
 
 if __name__ == '__main__':
     tf.logging.set_verbosity(tf.logging.INFO)
-    tf.flags.DEFINE_string('data_dir', '../../data/eng_news_txt_tbnk-data', 'Data directory')
+    tf.flags.DEFINE_string('data_dir', '../../data/ptb/processed', 'Data directory')
     tf.flags.DEFINE_integer('batch_size', 16, 'Batch size')
     tf.flags.DEFINE_integer('capacity', 4000, 'capacity')
     tf.flags.DEFINE_integer('max_steps', 100000, 'max_steps')
