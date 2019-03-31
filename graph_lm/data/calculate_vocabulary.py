@@ -1,7 +1,8 @@
 from collections import Counter
 
 from tqdm import tqdm
-
+from typing import Iterable, List
+from .word import Word
 UNK = "_UNK_"
 BLANK = "_BLANK_"
 
@@ -25,7 +26,7 @@ def calculate_vocabulary(dataset, min_count=0):
     return vocab
 
 
-def calculate_vocabulary_and_tags(sentences,total=None, min_count=0):
+def calculate_vocabulary_and_tags(sentences:Iterable[List[Word]],total=None, min_count=0):
     vocab = Counter()
     taglist = set()
     for sentence in tqdm(sentences, desc="Calculating Vocabulary", total=total):

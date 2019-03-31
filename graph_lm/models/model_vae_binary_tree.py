@@ -1,125 +1,13 @@
-import math
 import os
 
 import tensorflow as tf
 from tensorflow.contrib import slim
-from tensorflow.contrib.cudnn_rnn.python.layers.cudnn_rnn import CudnnLSTM, CUDNN_RNN_BIDIRECTION
-from .rnn_util import lstm
+
+from .model_vae_ctc_flat import vae_flat_encoder
+from .networks.decoder_binary_tree import decoder_binary_tree
 from ..callbacks.ctc_callback import CTCHook
 from ..kl import kl
 from ..sparse import sparsify
-
-
-from .model_vae_ctc_flat import vae_flat_encoder
-
-
-def calc_output(x, vocab_size, params, weights_regularizer=None):
-    # X: (N,*, D)
-    # Y: (N,*, V)
-    with tf.variable_scope('output_mlp', reuse=tf.AUTO_REUSE):
-        h = x
-        h = slim.fully_connected(
-            inputs=h,
-            num_outputs=params.decoder_dim,
-            activation_fn=tf.nn.leaky_relu,
-            scope='output_mlp_1',
-            weights_regularizer=weights_regularizer
-        )
-        h = slim.fully_connected(
-            inputs=h,
-            num_outputs=params.decoder_dim,
-            activation_fn=tf.nn.leaky_relu,
-            scope='output_mlp_2',
-            weights_regularizer=weights_regularizer
-        )
-        h = slim.fully_connected(
-            inputs=h,
-            num_outputs=vocab_size + 1,
-            activation_fn=None,
-            scope='output_mlp_3',
-            weights_regularizer=weights_regularizer
-        )
-    return h
-
-
-def calc_children(x, params, weights_regularizer=None):
-    # X: (N,x, D)
-    # Y: (N,2x,D)
-    with tf.variable_scope('children_mlp', reuse=tf.AUTO_REUSE):
-        h = x
-        h = slim.fully_connected(
-            inputs=h,
-            num_outputs=params.decoder_dim,
-            activation_fn=tf.nn.leaky_relu,
-            scope='output_mlp_1',
-            weights_regularizer=weights_regularizer
-        )
-        h = slim.fully_connected(
-            inputs=h,
-            num_outputs=params.decoder_dim,
-            activation_fn=tf.nn.leaky_relu,
-            scope='output_mlp_2',
-            weights_regularizer=weights_regularizer
-        )
-        h = slim.fully_connected(
-            inputs=h,
-            num_outputs=2 * params.decoder_dim,
-            activation_fn=None,
-            scope='output_mlp_3',
-            weights_regularizer=weights_regularizer
-        )
-        kids = tf.reshape(h, (tf.shape(h)[0], 2 * h.shape[1].value, params.decoder_dim))  # params.decoder_dim))
-        print("Calc child: {}->{}".format(x, kids))
-        return kids
-
-
-def infix_indices(depth, stack=[]):
-    if depth >= 0:
-        left = infix_indices(depth - 1, stack + [0])
-        right = infix_indices(depth - 1, stack + [1])
-        middle = stack
-        return left + [middle] + right
-    else:
-        return []
-
-
-def stack_tree(outputs, indices):
-    # outputs:[ (N,V), (N,2,V), (N,2,2,V)...]
-    # indices:[ paths]
-
-    slices = []
-    for idx in indices:
-        depth = len(idx)
-        output = outputs[depth]
-        output_idx = 0
-        mult = 1
-        for i in reversed(idx):
-            output_idx += mult * i
-            mult *= 2
-        slices.append(output[:, output_idx, :])
-    stacked = tf.stack(slices, axis=0)  # (L,N,V)
-    return stacked
-
-
-def vae_decoder(latent, vocab_size, params, weights_regularizer=None):
-    # latent (N, D)
-    depth = params.tree_depth
-    assert depth >= 0
-    h = slim.fully_connected(
-        latent,
-        num_outputs=params.decoder_dim,
-        scope='projection',
-        activation_fn=None,
-        weights_regularizer=weights_regularizer
-    )
-    h = tf.expand_dims(h, axis=1)
-
-    layers = []
-    layers.append(h)
-    for i in range(depth):
-        h = calc_children(h, params=params, weights_regularizer=weights_regularizer)
-        layers.append(h)
-    return layers
 
 
 def make_model_vae_binary_tree(
@@ -168,25 +56,18 @@ def make_model_vae_binary_tree(
 
         # Decoder
         with tf.variable_scope('vae_decoder') as decoder_scope:
-            tree_layers = vae_decoder(
+            tree_layers, logits = decoder_binary_tree(
                 latent=latent_sample,
                 vocab_size=vocab_size,
                 params=params,
                 weights_regularizer=weights_regularizer)
-            indices = infix_indices(depth)
-            flat_layers = stack_tree(tree_layers, indices=indices)  # (L,N,V)
-            logits = calc_output(
-                flat_layers,
-                vocab_size=vocab_size,
-                params=params,
-                weights_regularizer=weights_regularizer)
-            sequence_length_ctc = tf.tile(tf.shape(logits)[0:1], (n,))
 
-        print("Lengths: {} vs {}".format(len(indices), math.pow(2, depth + 1) - 1))
-        assert len(indices) == int(math.pow(2, depth + 1) - 1)
-        assert max(len(i) for i in indices) == depth
-        assert len(tree_layers) == depth + 1
+        # print("Lengths: {} vs {}".format(len(indices), math.pow(2, depth + 1) - 1))
+        # assert len(indices) == int(math.pow(2, depth + 1) - 1)
+        # assert max(len(i) for i in indices) == depth
+        # assert len(tree_layers) == depth + 1
 
+        sequence_length_ctc = tf.tile(tf.shape(logits)[0:1], (n,))
         ctc_labels_sparse = sparsify(tokens, sequence_mask)
         ctc_labels = tf.sparse_tensor_to_dense(ctc_labels_sparse, default_value=-1)
         # ctc_labels = tf.sparse_transpose(ctc_labels, (1,0))
@@ -211,14 +92,8 @@ def make_model_vae_binary_tree(
 
         # Generated data
         with tf.variable_scope(decoder_scope, reuse=True):
-            gtree_layers = vae_decoder(
+            gtree_layers, glogits = decoder_binary_tree(
                 latent=latent_prior_sample,
-                vocab_size=vocab_size,
-                params=params,
-                weights_regularizer=weights_regularizer)
-            gflat_layers = stack_tree(gtree_layers, indices=indices)  # (L,N,V)
-            glogits = calc_output(
-                gflat_layers,
                 vocab_size=vocab_size,
                 params=params,
                 weights_regularizer=weights_regularizer)

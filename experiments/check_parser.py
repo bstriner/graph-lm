@@ -1,9 +1,7 @@
-from timeit import timeit
-
 import tensorflow as tf
 import torch.cuda
 
-from graph_lm.parser import get_client, get_pipeline, parse_docs, parse_docs_client
+from graph_lm.data.parser import get_client, parse_docs_client
 
 
 def main(_argv):

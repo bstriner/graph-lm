@@ -4,28 +4,8 @@ from stanfordnlp.protobuf.CoreNLP_pb2 import Document
 from stanfordnlp.server.client import CoreNLPClient
 from tqdm import tqdm
 from typing import Generator, Iterable, List
-
+from .word import Word, ROOT
 DEPPARSE = "depparse"
-ROOT = "root"
-
-
-class Word(object):
-    def __init__(self, index, text, head=0, tag=ROOT):
-        self.index = index
-        self.text = text
-        self.head = head
-        self.tag = tag
-
-    def __str__(self):
-        return "\"{}\" ({}->{}, {})".format(
-            self.text,
-            self.index,
-            self.head,
-            self.tag
-        )
-
-    def __repr__(self):
-        return str(self)
 
 
 def get_pipeline():

@@ -1,6 +1,6 @@
 from typing import List
 
-from .parser import Word
+from graph_lm.data.parser import Word
 
 
 def word_depth(sentence: List[Word], index, depth=0):

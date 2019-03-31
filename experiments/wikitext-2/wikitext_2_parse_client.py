@@ -4,7 +4,7 @@ import tensorflow as tf
 
 from graph_lm.data.read_wikitext import FILES_RAW, PARSED, read_wikitext_raw
 from graph_lm.data.write_records import write_sentences_parsed
-from graph_lm.parser import get_client, parse_docs_client
+from graph_lm.data.parser import get_client, parse_docs_client
 
 
 def main(_argv):

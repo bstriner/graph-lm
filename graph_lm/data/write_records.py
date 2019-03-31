@@ -1,6 +1,4 @@
 import os
-from typing import Generator
-from typing import Iterable, List
 
 import dill
 import numpy as np
@@ -8,15 +6,19 @@ import tensorflow as tf
 from tensorflow.core.example.feature_pb2 import Feature, Features
 from tensorflow.python.lib.io.tf_record import TFRecordWriter
 from tqdm import tqdm
+from typing import Dict, Generator, Iterable, List
 
 from .calculate_vocabulary import UNK
-from ..parser import Word
+from .word import INT_FIELDS, SENTENCE_LENGTH, TEXT_FIELDS, Word
 
 
-def encode_words(sentences, wordmap):
+def encode_words(words, wordmap):
+    return np.array([wordmap[word] if word in wordmap else wordmap[UNK] for word in words], dtype=np.int64)
+
+
+def encode_sentences(sentences, wordmap):
     for sentence in sentences:
-        encoded = np.array([wordmap[word] if word in wordmap else wordmap[UNK] for word in sentence], dtype=np.int32)
-        yield encoded
+        yield encode_words(sentence, wordmap)
 
 
 def write_records(data, output_file):
@@ -80,6 +82,39 @@ def write_records_parsed(sentences: Iterable[List[Word]], output_file, wordmap, 
             }
             context_features = {
                 'data_size': data_size
+            }
+            example = tf.train.SequenceExample(
+                context=Features(feature=context_features),
+                feature_lists=tf.train.FeatureLists(feature_list=sequence_features),
+            )
+            writer.write(example.SerializeToString())
+
+
+def write_records_parsed_v2(
+        sentences: Iterable[List[Word]],
+        output_file: str,
+        vocabmaps: Dict[str,Dict[str, int]],
+        int_fields=INT_FIELDS,
+        text_fields=TEXT_FIELDS,
+        total=None):
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
+    with TFRecordWriter(output_file) as writer:
+        for sentence in tqdm(sentences, desc="Writing Records", total=total):
+            int_field_data = {
+                field: feature_int64_list([int(getattr(word, field)) for word in sentence])
+                for field in int_fields}
+            text_field_data = {
+                field: feature_int64_list(encode_words(
+                    words=[getattr(word, field) for word in sentence],
+                    wordmap=vocabmaps[field]))
+                for field in text_fields}
+
+            sentence_length = feature_int64([len(sentence)])
+            sequence_features = dict()
+            sequence_features.update(int_field_data)
+            sequence_features.update(text_field_data)
+            context_features = {
+                SENTENCE_LENGTH: sentence_length
             }
             example = tf.train.SequenceExample(
                 context=Features(feature=context_features),
