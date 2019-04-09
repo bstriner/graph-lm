@@ -24,7 +24,7 @@ def calc_kl_loss_raw(mu, logsigma, params, n):
         scale_diag=tf.ones_like(logsigma),
         name="latent_prior")
     latent_prior_sample = latent_prior.sample()
-    print("latent_sample: {}".format(latent_sample))
+    #print("latent_sample: {}".format(latent_sample))
     if one_fix:
         latent_sample=tf.expand_dims(latent_sample, 1)
         latent_prior_sample=tf.expand_dims(latent_prior_sample, 1)
@@ -34,7 +34,7 @@ def calc_kl_loss_raw(mu, logsigma, params, n):
 
     kl_n = tfd.kl_divergence(latent_dist, latent_prior)
     kl_n = tf.maximum(kl_n, params.kl_min)  # (L, N)
-    print("kl_n shape: {}".format(kl_n))
+    #print("kl_n shape: {}".format(kl_n))
     kl_loss_raw = tf.reduce_sum(kl_n) / tf.cast(n, tf.float32)
     return latent_sample, latent_prior_sample, kl_loss_raw
 

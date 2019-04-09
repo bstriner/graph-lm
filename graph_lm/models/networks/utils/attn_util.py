@@ -71,7 +71,6 @@ def calc_attn_v2(a, b, b_lengths, a_transpose=True, b_transpose=True):
         b_part = b_t[:b_lengths_t, :]  # (bl, d)
         b_n = tf.norm(b_part, axis=-1, ord=2)
         energy = tf.tensordot(a_t, b_part, axes=[(1,), (1,)])  # (al, bl)
-        #energy = energy / tf.expand_dims(a_n, 1)
         energy = energy / tf.expand_dims(b_n, 0)
         attn = tf.nn.softmax(energy, axis=-1)
         pattn = tf.pad(attn, [[0, 0], [0, bl - b_lengths_t]])
