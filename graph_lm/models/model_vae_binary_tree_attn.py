@@ -3,9 +3,10 @@ import math
 import tensorflow as tf
 from tensorflow.contrib import slim
 
-from .estimators.ctc_estimator import ctc_estimator
+from .estimators.vae_ctc_estimator import ctc_estimator
 from .networks.decoder_bintree_attention import decoder_bintree_attention
 from .networks.encoder_bintree_attention import encoder_bintree_attn
+from .networks.encoder_bintree_recurrent_attention import encoder_bintree_recurrent_attn_vae
 from ..data.word import SENTENCE_LENGTH, TEXT
 from ..kl import kl_array
 
@@ -51,7 +52,7 @@ def make_model_vae_binary_tree_attn(
             weights_regularizer = None
 
         # Encoder
-        mus, logsigmas = encoder_bintree_attn(
+        mus, logsigmas = encoder_bintree_recurrent_attn_vae(
             tokens=tokens,
             token_lengths=token_lengths,
             vocab_size=vocab_size,
