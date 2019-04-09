@@ -255,15 +255,7 @@ def binary_tree_upward_messages(inp, hidden_dim):
 
     k = 2
     inp_rs = tf.reshape(inp, (n, l, k, d))
-    ind = tf.range(start=0, limit=k, dtype=tf.int32)  # (k,)
-    ind = tf.one_hot(
-        indices=ind,
-        depth=k,
-        axis=1
-    )  # (k,k)
-    ind = tf.reshape(ind, (1, 1, k, k))
-    ind = tf.tile(ind, [n, l, 1, 1])
-    h = tf.concat([inp_rs, ind], axis=-1)
+    h = tf.concat([inp_rs, branch_indicators(n, l, k)], axis=-1)
     h = slim.fully_connected(
         inputs=h,
         num_outputs=hidden_dim,
@@ -281,25 +273,35 @@ def binary_tree_upward_messages(inp, hidden_dim):
 
 
 def binary_tree_upward(inputs, hidden_dim):
-    msg_t = tf.zeros(
-        shape=(tf.shape(inputs[-1])[0], inputs[-1].shape[1].value, hidden_dim),
-        dtype=tf.float32
-    )
-    msgs = [msg_t]
-    for t, input_t in enumerate(reversed(inputs[1:])):
-        with tf.variable_scope('binary_tree_upward', reuse=t > 0):
-            inp = tf.concat([input_t, msg_t], axis=-1)
-            msg_t = binary_tree_upward_messages(
-                inp=inp,
-                hidden_dim=hidden_dim
-            )
-            msgs.append(msg_t)
-    msgs.reverse()
-    assert len(inputs) == len(msgs)
-    for i, m in zip(inputs, msgs):
-        assert i.shape[1].value == m.shape[1].value
-    return msgs
+    with tf.variable_scope('binary_tree_upward'):
+        msg_0 = tf.get_variable(
+            shape=(1, 1, hidden_dim,),
+            dtype=tf.float32,
+            initializer=tf.initializers.zeros,
+            name='msg_0'
+        )
+        msg_t = tf.tile(msg_0, (tf.shape(inputs[-1])[0], inputs[-1].shape[1].value, 1))
+        msgs = [msg_t]
+        for t, input_t in enumerate(reversed(inputs[1:])):
+            with tf.variable_scope('binary_tree_upward_pass', reuse=t > 0):
+                inp = tf.concat([input_t, msg_t], axis=-1)
+                msg_t = binary_tree_upward_messages(
+                    inp=inp,
+                    hidden_dim=hidden_dim
+                )
+                msgs.append(msg_t)
+        msgs.reverse()
+        assert len(inputs) == len(msgs)
+        for i, m in zip(inputs, msgs):
+            assert i.shape[1].value == m.shape[1].value
+        return msgs
 
+
+def branch_indicators(n , l, k):
+    ind = tf.eye(k, dtype=tf.float32)
+    ind = tf.reshape(ind, (1, 1, k, k))
+    ind = tf.tile(ind, [n, l, 1, 1])
+    return ind
 
 def binary_tree_downward_messages(inp, hidden_dim):
     """
@@ -314,16 +316,8 @@ def binary_tree_downward_messages(inp, hidden_dim):
     d = inp.shape[2].value
     k = 2
     inp_rs = tf.reshape(inp, (n, l, 1, d))
-    inp_rs = tf.tile(inp_rs, (1, 1, 2, 1))
-    ind = tf.range(start=0, limit=k, dtype=tf.int32)  # (k,)
-    ind = tf.one_hot(
-        indices=ind,
-        depth=k,
-        axis=1
-    )  # (k,k)
-    ind = tf.reshape(ind, (1, 1, k, k))
-    ind = tf.tile(ind, [n, l, 1, 1])
-    h = tf.concat([inp_rs, ind], axis=-1)  # (n, l, k, d)
+    inp_rs = tf.tile(inp_rs, (1, 1, k, 1))
+    h = tf.concat([inp_rs, branch_indicators(n,l,k)], axis=-1)  # (n, l, k, d)
     h = slim.fully_connected(
         inputs=h,
         num_outputs=hidden_dim,
@@ -341,23 +335,27 @@ def binary_tree_downward_messages(inp, hidden_dim):
 
 
 def binary_tree_downward(inputs, hidden_dim):
-    msg_t = tf.zeros(
-        shape=(tf.shape(inputs[0])[0], inputs[0].shape[1].value, hidden_dim),
-        dtype=tf.float32
-    )
-    msgs = [msg_t]
-    for t, input_t in enumerate(inputs[:-1]):
-        with tf.variable_scope('binary_tree_downward', reuse=t > 0):
-            inp = tf.concat([input_t, msg_t], axis=-1)
-            msg_t = binary_tree_downward_messages(
-                inp=inp,
-                hidden_dim=hidden_dim
-            )
-            msgs.append(msg_t)
-    assert len(inputs) == len(msgs)
-    for i, m in zip(inputs, msgs):
-        assert i.shape[1].value == m.shape[1].value
-    return msgs
+    with tf.variable_scope('binary_tree_downward'):
+        msg_0 = tf.get_variable(
+            shape=(1, 1, hidden_dim,),
+            dtype=tf.float32,
+            initializer=tf.initializers.zeros,
+            name='msg_0'
+        )
+        msg_t = tf.tile(msg_0, (tf.shape(inputs[0])[0], inputs[0].shape[1].value, 1))
+        msgs = [msg_t]
+        for t, input_t in enumerate(inputs[:-1]):
+            with tf.variable_scope('binary_tree_downward_pass', reuse=t > 0):
+                inp = tf.concat([input_t, msg_t], axis=-1)
+                msg_t = binary_tree_downward_messages(
+                    inp=inp,
+                    hidden_dim=hidden_dim
+                )
+                msgs.append(msg_t)
+        assert len(inputs) == len(msgs)
+        for i, m in zip(inputs, msgs):
+            assert i.shape[1].value == m.shape[1].value
+        return msgs
 
 
 def concat_layers(*layers):

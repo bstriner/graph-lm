@@ -3,7 +3,8 @@ from tensorflow.contrib import slim
 
 from .embed_sentences import embed_sentences
 from .utils.attn_util import calc_attn_v2
-from .utils.bintree_utils import binary_tree_downward, binary_tree_upward, concat_layers, infix_indices, stack_tree
+from .utils.bintree_utils import binary_tree_downward, binary_tree_upward, branch_indicators, concat_layers, \
+    infix_indices, stack_tree
 from .utils.rnn_util import lstm
 
 
@@ -11,7 +12,7 @@ def calc_layer_inputs(h, params, input_hidden_t, input_proj, sequence_lengths):
     query = slim.fully_connected(
         inputs=h,
         num_outputs=params.attention_dim,
-        activation_fn=None,
+        activation_fn=tf.nn.leaky_relu,
         scope='query_projection'
     )
     attn = calc_attn_v2(
@@ -42,7 +43,7 @@ def calc_layer_outputs(inp, params):
     return output
 
 
-def calc_layer_children(
+def calc_layer_children_old(
         inp,
         params):
     # X: (N,x, D)
@@ -71,6 +72,45 @@ def calc_layer_children(
         return kids
 
 
+def calc_layer_children(
+        inp,
+        params):
+    # X: (N,x, D)
+    # Y: (N,2x,D)
+    with tf.variable_scope('children_mlp'):
+        assert inp.shape.ndims == 3
+        n = tf.shape(inp)[0]
+        input_len = inp.shape[1].value
+        input_dim = inp.shape[2].value
+        k = 2
+        assert input_len
+        assert input_dim
+        h = inp
+        h = tf.reshape(h, (n, input_len, 1, input_dim))
+        h = tf.tile(h, (1, 1, k, 1))
+        h = tf.concat([h, branch_indicators(n, input_len, k)], axis=-1)
+        h = slim.fully_connected(
+            inputs=h,
+            num_outputs=params.encoder_dim,
+            activation_fn=tf.nn.leaky_relu,
+            scope='output_mlp_1'
+        )
+        h = slim.fully_connected(
+            inputs=h,
+            num_outputs=params.encoder_dim,
+            activation_fn=tf.nn.leaky_relu,
+            scope='output_mlp_2'
+        )
+        h = slim.fully_connected(
+            inputs=h,
+            num_outputs=params.encoder_dim,
+            activation_fn=tf.nn.leaky_relu,
+            scope='output_mlp_3'
+        )
+        h = tf.reshape(h, (n, input_len * 2, h.shape[-1].value))
+        return h
+
+
 def binary_tree_down_recurrent_attention(
         x0,
         input_hidden,
@@ -94,12 +134,12 @@ def binary_tree_down_recurrent_attention(
         scope='encoder_input_proj'
     )  # (N,O, D)
     h = tf.expand_dims(x0, 1)  # (N,L,D)
-    h = slim.fully_connected(
-        inputs=h,
-        num_outputs=params.encoder_dim,
-        activation_fn=tf.nn.leaky_relu,
-        scope='encoder_input_h0'
-    )  # (N,O, D)
+    # h = slim.fully_connected(
+    #    inputs=h,
+    #    num_outputs=params.encoder_dim,
+    #    activation_fn=tf.nn.leaky_relu,
+    #    scope='encoder_input_h0'
+    # )  # (N,O, D)
     layers = []
     attns = []
     with tf.variable_scope("bintree", reuse=False) as treescope:
