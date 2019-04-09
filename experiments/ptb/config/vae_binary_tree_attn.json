@@ -5,7 +5,7 @@
   "kl_anneal_min": 0.0,
   "kl_anneal_max": 0.0,
   "tree_depth": 8,
-  "lr": 3e-6,
+  "lr": 3e-4,
   "batch_norm": true,
   "encoder_dim": 512,
   "decoder_dim": 512,
