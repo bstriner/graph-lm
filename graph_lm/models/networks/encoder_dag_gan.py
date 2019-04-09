@@ -1,7 +1,7 @@
 import tensorflow as tf
 from tensorflow.contrib import slim
 
-from .dag_utils import message_passing
+from graph_lm.models.networks.utils.dag_utils import message_passing
 
 
 def encoder_dag_gan(dag, noise, dag_bw, text, tags, vocab_size, tags_size, params, weights_regularizer=None):

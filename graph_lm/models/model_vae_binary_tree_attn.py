@@ -1,42 +1,42 @@
-import os
+import math
 
 import tensorflow as tf
 from tensorflow.contrib import slim
 
+from .estimators.ctc_estimator import ctc_estimator
 from .networks.decoder_bintree_attention import decoder_bintree_attention
 from .networks.encoder_bintree_attention import encoder_bintree_attn
-from ..callbacks.ctc_callback import CTCHook
-from ..data.word import SENTENCE_LENGTH
+from ..data.word import SENTENCE_LENGTH, TEXT
 from ..kl import kl_array
-from ..sparse import sparsify
-import math
 
 
 def make_model_vae_binary_tree_attn(
         run_config,
         vocabs
 ):
-    vocab = vocabs['text']
+    vocab = vocabs[TEXT]
     vocab_size = vocab.shape[0]
     print("Vocab size: {}".format(vocab_size))
 
     def model_fn(features, labels, mode, params):
         is_training = mode == tf.estimator.ModeKeys.TRAIN
         # Inputs
-        tokens = features['text']  # (N, L)
+        tokens = features[TEXT]  # (N, L)
         token_lengths = features[SENTENCE_LENGTH]  # (N,)
         sequence_mask = tf.sequence_mask(maxlen=tf.shape(tokens)[1], lengths=token_lengths)
         n = tf.shape(tokens)[0]
         depth = params.tree_depth
+        const_sequence_length = int(math.pow(2, depth + 1) - 1)
 
+        # Assertions
         with tf.control_dependencies([
             tf.assert_greater_equal(
-                tf.cast(tf.pow(2, depth + 1) - 1, dtype=token_lengths.dtype),
+                tf.cast(const_sequence_length, dtype=token_lengths.dtype),
                 token_lengths,
                 message="Tokens longer than tree size"),
-            tf.assert_less_equal(
+            tf.assert_less(
                 tokens,
-                tf.cast(vocab_size - 1, tokens.dtype),
+                tf.cast(vocab_size, tokens.dtype),
                 message="Tokens larger than vocab"),
             tf.assert_greater_equal(
                 tokens,
@@ -59,17 +59,29 @@ def make_model_vae_binary_tree_attn(
             n=n,
             weights_regularizer=weights_regularizer,
             is_training=is_training
-        )
+        )  # [(N,1,D), (N,2,D),(N,4,D),...]
+        assert mus[0].shape[1].value == 1
+        assert logsigmas[0].shape[1].value == 1
         # Sampling
         latent_sample, latent_prior_sample = kl_array(
             mus=mus,
             logsigmas=logsigmas,
             params=params,
-            n=n)
+            n=n)  # [(N,1,D), (N,2,D),(N,4,D),...]
+        assert latent_sample[0].shape[1].value == 1
+        assert latent_prior_sample[0].shape[1].value == 1
         # Decoder
         with tf.variable_scope('vae_decoder') as decoder_scope:
-            tree_layers, logits = decoder_bintree_attention(
+            logits = decoder_bintree_attention(
                 latent_layers=latent_sample,
+                vocab_size=vocab_size,
+                params=params,
+                weights_regularizer=weights_regularizer,
+                is_training=is_training)  # (L,N,D)
+        # Generated data
+        with tf.variable_scope(decoder_scope, reuse=True):
+            glogits = decoder_bintree_attention(
+                latent_layers=latent_prior_sample,
                 vocab_size=vocab_size,
                 params=params,
                 weights_regularizer=weights_regularizer,
@@ -79,76 +91,25 @@ def make_model_vae_binary_tree_attn(
         # assert len(indices) == int(math.pow(2, depth + 1) - 1)
         # assert max(len(i) for i in indices) == depth
         # assert len(tree_layers) == depth + 1
+        with tf.control_dependencies([
+            tf.assert_equal(
+                tf.cast(const_sequence_length, dtype=token_lengths.dtype),
+                tf.shape(logits)[0],
+                message='tree output shape incorrect')
+        ]):
+            logits = tf.identity(logits)
         sequence_length_ctc = tf.tile(tf.constant([int(math.pow(2, depth + 1) - 1)], dtype=tf.int32), (n,))
-        # sequence_length_ctc = tf.tile(tf.shape(logits)[0:1], (n,))
-        ctc_labels_sparse = sparsify(tf.cast(tokens, tf.int32), sequence_mask)
-        ctc_labels = tf.sparse_tensor_to_dense(ctc_labels_sparse, default_value=-1)
-        # ctc_labels = tf.sparse_transpose(ctc_labels, (1,0))
-        print("Labels: {}".format(ctc_labels))
-        # tf.tile(tf.pow([2], depth), (n,))
-        print("CTC: {}, {}, {}".format(ctc_labels, logits, sequence_length_ctc))
-        ctc_loss_raw = tf.nn.ctc_loss(
-            labels=ctc_labels_sparse,
-            sequence_length=sequence_length_ctc,
-            inputs=logits,
-            # sequence_length=tf.shape(logits)[0],
-            # ctc_merge_repeated=False,
-            # preprocess_collapse_repeated=False,
-            # ctc_merge_repeated=True,
-            # ignore_longer_outputs_than_inputs=False,
-            time_major=True
-        )
-        ctc_loss = tf.reduce_mean(ctc_loss_raw)
-        tf.losses.add_loss(ctc_loss)
 
-        total_loss = tf.losses.get_total_loss()
-
-        # Generated data
-        with tf.variable_scope(decoder_scope, reuse=True):
-            gtree_layers, glogits = decoder_bintree_attention(
-                latent_layers=latent_prior_sample,
-                vocab_size=vocab_size,
-                params=params,
-                weights_regularizer=weights_regularizer,
-                is_training=is_training)  # (L,N,D)
-
-        autoencode_hook = CTCHook(
+        return ctc_estimator(
+            tokens=tokens,
+            token_lengths=token_lengths,
             logits=logits,
-            lengths=sequence_length_ctc,
+            glogits=glogits,
+            sequence_mask=sequence_mask,
+            sequence_length_ctc=sequence_length_ctc,
             vocab=vocab,
-            path=os.path.join(run_config.model_dir, "autoencoded", "autoencoded-{:08d}.csv"),
-            true=ctc_labels,
-            name="Autoencoded"
-        )
-        generate_hook = CTCHook(
-            logits=glogits,
-            lengths=sequence_length_ctc,
-            vocab=vocab,
-            path=os.path.join(run_config.model_dir, "generated", "generated-{:08d}.csv"),
-            true=ctc_labels,
-            name="Generated"
-        )
-        evaluation_hooks = [autoencode_hook, generate_hook]
-
-        tf.summary.scalar('ctc_loss', ctc_loss)
-        tf.summary.scalar('total_loss', total_loss)
-
-        # Train
-        optimizer = tf.train.AdamOptimizer(params.lr)
-        train_op = slim.learning.create_train_op(
-            total_loss,
-            optimizer,
-            clip_gradient_norm=params.clip_gradient_norm)
-        eval_metric_ops = {
-            'ctc_loss_eval': tf.metrics.mean(ctc_loss_raw),
-            'token_lengths_eval': tf.metrics.mean(token_lengths)
-        }
-
-        return tf.estimator.EstimatorSpec(
-            mode=mode,
-            loss=total_loss,
-            eval_metric_ops=eval_metric_ops,
-            evaluation_hooks=evaluation_hooks,
-            train_op=train_op)
+            run_config=run_config,
+            params=params,
+            mode=mode)
 
     return model_fn

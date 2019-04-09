@@ -1,8 +1,8 @@
 import tensorflow as tf
 from tensorflow.contrib import slim
 
-from ..attn_util import calc_attn_v2
-from ..rnn_util import lstm
+from graph_lm.models.networks.utils.attn_util import calc_attn_v2
+from graph_lm.models.networks.utils.rnn_util import lstm
 
 
 def vae_flat_encoder_attn(tokens, token_lengths, vocab_size, params, n, output_length, weights_regularizer=None

@@ -1,8 +1,8 @@
 import tensorflow as tf
 from tensorflow.contrib import slim
 
-from .dag_utils import make_dag, message_passing
-from ..rnn_util import lstm
+from graph_lm.models.networks.utils.dag_utils import make_dag, message_passing
+from graph_lm.models.networks.utils.rnn_util import lstm
 from ...stats import get_bias
 
 

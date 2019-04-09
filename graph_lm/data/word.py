@@ -15,6 +15,8 @@ INT_FIELDS = [
 ]
 ALL_FIELDS = TEXT_FIELDS+INT_FIELDS
 SENTENCE_LENGTH = 'sentence_length'
+TEXT='text'
+LEMMA='lemma'
 
 
 class Word(object):

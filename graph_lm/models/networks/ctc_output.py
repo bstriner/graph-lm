@@ -5,7 +5,7 @@ from tensorflow.contrib import slim
 from ...stats import get_bias_ctc
 
 
-def calc_output(x, vocab_size, params, weights_regularizer=None, reuse=False, is_training=True):
+def calc_ctc_output(x, vocab_size, params, weights_regularizer=None, reuse=False, is_training=True):
     # X: (N,*, D)
     # Y: (N,*, V)
     with tf.variable_scope('output_mlp', reuse=reuse):

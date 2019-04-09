@@ -3,7 +3,7 @@ import os
 import tensorflow as tf
 from tensorflow.contrib import slim
 
-from .networks.dag_utils import build_dag
+from graph_lm.models.networks.utils.dag_utils import build_dag
 from .networks.decoder_dag_supervised import vae_decoder_dag_supervised
 from .networks.encoder_dag import encoder_dag
 from ..callbacks.dag_callback import DAGHook

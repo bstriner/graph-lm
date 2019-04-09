@@ -1,9 +1,7 @@
 from tensorflow.contrib import slim
 
-from .tree_utils import infix_indices, stack_tree
-from .bintree_utils import binary_tree_resnet
-
-from .ctc_output import calc_output
+from .ctc_output import calc_ctc_output
+from .utils.bintree_utils import binary_tree_resnet, infix_indices, stack_tree
 
 
 def decoder_binary_tree(latent, vocab_size, params, weights_regularizer=None, is_training=True, reuse=None):
@@ -25,7 +23,7 @@ def decoder_binary_tree(latent, vocab_size, params, weights_regularizer=None, is
     )
     indices = infix_indices(depth)
     flat_layers = stack_tree(tree_layers, indices=indices)  # (L,N,V)
-    logits = calc_output(
+    logits = calc_ctc_output(
         flat_layers,
         vocab_size=vocab_size,
         params=params,

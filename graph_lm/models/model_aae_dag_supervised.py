@@ -4,7 +4,7 @@ import tensorflow as tf
 from tensorflow.contrib import slim
 from tensorflow.contrib.gan.python.train import RunTrainOpsHook
 
-from .networks.dag_utils import build_dag
+from graph_lm.models.networks.utils.dag_utils import build_dag
 from .networks.decoder_dag_supervised import vae_decoder_dag_supervised
 from .networks.discriminator_dag_supervised import discriminator_dag_supervised
 from .networks.encoder_dag_gan import encoder_dag_gan

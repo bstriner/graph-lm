@@ -1,7 +1,6 @@
 import tensorflow as tf
-from tensorflow.contrib import slim
 
-from .dag_utils import message_passing
+from graph_lm.models.networks.utils.dag_utils import message_passing
 from ...sn import sn_fully_connected, sn_kernel
 
 def discriminator_dag_supervised(

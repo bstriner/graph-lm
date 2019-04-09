@@ -1,29 +1,39 @@
-from tensorflow.contrib import slim
-
-from .tree_utils import infix_indices, stack_tree
-from .bintree_utils import binary_tree_resnet
-
-from .ctc_output import calc_output
 import tensorflow as tf
+
+from .ctc_output import calc_ctc_output
+from .utils.bintree_utils import binary_tree_up, binary_tree_down, infix_indices, stack_tree
 
 
 def decoder_bintree_attention(latent_layers, vocab_size, params, weights_regularizer=None, is_training=True):
     # latent (N, D)
     depth = params.tree_depth
     assert depth >= 0
-    x0 = tf.squeeze(latent_layers[0], axis=1)
-    tree_layers = binary_tree_resnet(
-        x0=x0,
-        depth=params.tree_depth,
-        hidden_dim=params.decoder_dim,
-        inputs=latent_layers
+
+    hs = latent_layers
+    messages_up = binary_tree_up(
+        inputs=hs,
+        hidden_dim=params.decoder_dim
     )
+    hs = [
+        tf.concat(cols, axis=-1)
+        for cols in zip(hs, messages_up)
+    ]
+    messages_down = binary_tree_down(
+        x0=tf.squeeze(hs[0], axis=1),
+        inputs=hs,
+        hidden_dim=params.decoder_dim,
+        depth=depth
+    )
+    hs = [
+        tf.concat(cols, axis=-1)
+        for cols in zip(hs, messages_down)
+    ]
     indices = infix_indices(depth)
-    flat_layers = stack_tree(tree_layers, indices=indices)  # (L,N,V)
-    logits = calc_output(
+    flat_layers = stack_tree(hs, indices=indices)  # (L,N,V)
+    logits = calc_ctc_output(
         flat_layers,
         vocab_size=vocab_size,
         params=params,
         weights_regularizer=weights_regularizer,
         is_training=is_training)
-    return tree_layers, logits
+    return logits

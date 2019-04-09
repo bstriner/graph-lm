@@ -7,6 +7,12 @@ tfd = tfp.distributions
 
 
 def calc_kl_loss_raw(mu, logsigma, params, n):
+    one_fix=False
+    if mu.shape[1].value==1:
+        mu = tf.squeeze(mu, 1)
+        logsigma = tf.squeeze(logsigma, 1)
+        one_fix=True
+        print("Fixing ones issue")
     latent_dist = tfd.MultivariateNormalDiag(
         loc=mu,
         scale_diag=tf.nn.softplus(logsigma),
@@ -19,7 +25,12 @@ def calc_kl_loss_raw(mu, logsigma, params, n):
         name="latent_prior")
     latent_prior_sample = latent_prior.sample()
     print("latent_sample: {}".format(latent_sample))
+    if one_fix:
+        latent_sample=tf.expand_dims(latent_sample, 1)
+        latent_prior_sample=tf.expand_dims(latent_prior_sample, 1)
     # scale_identity_multiplier=1.0)
+    #assert logsigma.shape[1].value == mu.shape[1].value
+    #assert latent_sample.shape[1].value == mu.shape[1].value
 
     kl_n = tfd.kl_divergence(latent_dist, latent_prior)
     kl_n = tf.maximum(kl_n, params.kl_min)  # (L, N)

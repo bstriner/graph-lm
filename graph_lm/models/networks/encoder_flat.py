@@ -1,7 +1,7 @@
 import tensorflow as tf
 from tensorflow.contrib import slim
 
-from ..rnn_util import lstm
+from graph_lm.models.networks.utils.rnn_util import lstm
 
 
 def vae_flat_encoder(tokens, token_lengths, vocab_size, params, n, weights_regularizer=None, is_training=True):
