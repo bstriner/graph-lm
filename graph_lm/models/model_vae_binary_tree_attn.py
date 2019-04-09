@@ -97,7 +97,7 @@ def make_model_vae_binary_tree_attn(
                 message='tree output shape incorrect')
         ]):
             logits = tf.identity(logits)
-        sequence_length_ctc = tf.tile(tf.constant([int(math.pow(2, depth + 1) - 1)], dtype=tf.int32), (n,))
+        sequence_length_ctc = tf.tile(tf.constant([const_sequence_length], dtype=tf.int32), (n,))
 
         return ctc_estimator(
             tokens=tokens,

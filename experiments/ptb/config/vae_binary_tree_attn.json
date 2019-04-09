@@ -6,5 +6,9 @@
   "kl_anneal_max": 0.0,
   "tree_depth": 8,
   "lr": 3e-6,
-  "batch_norm": false
+  "batch_norm": true,
+  "encoder_dim": 512,
+  "decoder_dim": 512,
+  "latent_dim": 256,
+  "attention_dim": 256
 }

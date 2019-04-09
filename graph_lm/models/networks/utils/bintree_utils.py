@@ -16,20 +16,25 @@ def infix_indices(depth, stack=[]):
         return []
 
 
+def tree_index_map(idx):
+    depth = len(idx)
+    output_idx = 0
+    mult = 1
+    for i in reversed(idx):
+        output_idx += mult * i
+        mult *= 2
+    return depth, output_idx
+
+
 def stack_tree(outputs, indices):
     # outputs:[ (N,V), (N,2,V), (N,2,2,V)...]
     # indices:[ paths]
 
     slices = []
     for idx in indices:
-        depth = len(idx)
-        output = outputs[depth]
-        output_idx = 0
-        mult = 1
-        for i in reversed(idx):
-            output_idx += mult * i
-            mult *= 2
-        slices.append(output[:, output_idx, :])
+        depth, output_idx = tree_index_map(idx)
+        slice = outputs[depth][:, output_idx, :]
+        slices.append(slice)
     stacked = tf.stack(slices, axis=0)  # (L,N,V)
     return stacked
 
@@ -360,3 +365,10 @@ def concat_layers(*layers):
         tf.concat(ls, axis=-1)
         for ls in zip(*layers)
     ]
+
+
+if __name__ == '__main__':
+    idx = infix_indices(depth=2)
+    tree_idx = [tree_index_map(i) for i in idx]
+    print(idx)
+    print(tree_idx)
