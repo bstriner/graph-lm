@@ -4,7 +4,7 @@ from collections import Counter
 import numpy as np
 from typing import Dict, Iterable, List
 
-from .word import Word, TEXT_FIELDS
+from .word import TEXT_FIELDS, Word
 
 UNK = "_UNK_"
 BLANK = "_BLANK_"
@@ -14,7 +14,7 @@ def calculate_map(vocab):
     return {k: i for i, k in enumerate(vocab)}
 
 
-def calculate_vocabs(dataset: Iterable[List[Word]], fields: List[str]=TEXT_FIELDS) -> Dict[str, Counter]:
+def calculate_vocabs(dataset: Iterable[List[Word]], fields: List[str] = TEXT_FIELDS) -> Dict[str, Counter]:
     vocabs = {
         k: Counter() for k in fields
     }
@@ -25,7 +25,7 @@ def calculate_vocabs(dataset: Iterable[List[Word]], fields: List[str]=TEXT_FIELD
     return vocabs
 
 
-def combine_vocabs(vocabs: Iterable[Dict[str, Counter]], fields: List[str]=TEXT_FIELDS) -> Dict[str, Counter]:
+def combine_vocabs(vocabs: Iterable[Dict[str, Counter]], fields: List[str] = TEXT_FIELDS) -> Dict[str, Counter]:
     vocabs = {
         k: sum((vocab[k] for vocab in vocabs), Counter()) for k in fields
     }
@@ -57,7 +57,7 @@ def write_vocablists(vocablists: Dict[str, List[str]], path: str) -> None:
         )
 
 
-def read_vocablists( path: str, fields: List[str]=TEXT_FIELDS) -> Dict[str, List[str]]:
+def read_vocablists(path: str, fields: List[str] = TEXT_FIELDS) -> Dict[str, List[str]]:
     return {
         field: np.load(file=os.path.join(path, "{}.npy".format(field))) for field in fields
     }
