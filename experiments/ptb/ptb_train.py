@@ -17,7 +17,7 @@ def main(_argv):
 if __name__ == '__main__':
     tf.logging.set_verbosity(tf.logging.INFO)
     tf.flags.DEFINE_string('data_dir', '../../data/ptb/processed', 'Data directory')
-    tf.flags.DEFINE_string('model_dir', '../../output/ptb/vae/binary_tree/attn/v14', 'Data directory')
+    tf.flags.DEFINE_string('model_dir', '../../output/ptb/vae/binary_tree/attn/v15', 'Data directory')
     tf.flags.DEFINE_string('config', 'config/vae_binary_tree_attn.json', 'Data directory')
     # tf.flags.DEFINE_string('config', 'config/vae_ctc_flat.json', 'Data directory')
     # tf.flags.DEFINE_string('config', 'config/vae_ctc_flat_attn.json', 'Data directory')
