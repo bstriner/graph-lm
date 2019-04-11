@@ -2,7 +2,7 @@
 Train on PTB
 
 ssh -L 6006:localhost:6006 ben@unity
-docker run -d -v /mnt/data/projects/graph-lm/output:/tb -p 6006:6006 tensorflow/tensorflow tensorboard --logdir /tb
+docker run -d -v /mnt/data/projects/graph-lm/output/ptb:/tb -p 6006:6006 tensorflow/tensorflow tensorboard --logdir /tb
 """
 
 import tensorflow as tf
@@ -17,8 +17,8 @@ def main(_argv):
 if __name__ == '__main__':
     tf.logging.set_verbosity(tf.logging.INFO)
     tf.flags.DEFINE_string('data_dir', '../../data/ptb/processed', 'Data directory')
-    tf.flags.DEFINE_string('model_dir', '../../output/ptb/vae/binary_tree/attn/v15', 'Data directory')
-    tf.flags.DEFINE_string('config', 'config/vae_binary_tree_attn.json', 'Data directory')
+    tf.flags.DEFINE_string('model_dir', '../../output/ptb/aae/binary_tree/v4', 'Data directory')
+    tf.flags.DEFINE_string('config', 'config/aae_binary_tree.json', 'Data directory')
     # tf.flags.DEFINE_string('config', 'config/vae_ctc_flat.json', 'Data directory')
     # tf.flags.DEFINE_string('config', 'config/vae_ctc_flat_attn.json', 'Data directory')
     # tf.flags.DEFINE_string('config', 'config/vae_dag.json', 'Data directory')

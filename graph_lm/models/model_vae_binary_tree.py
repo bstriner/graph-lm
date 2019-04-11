@@ -7,7 +7,7 @@ from .model_vae_ctc_flat import vae_flat_encoder
 from .networks.decoder_binary_tree import decoder_binary_tree
 from ..callbacks.ctc_callback import CTCHook
 from ..data.word import SENTENCE_LENGTH
-from ..kl import kl
+from graph_lm.models.estimators.kl import kl
 from ..sparse import sparsify
 import math
 

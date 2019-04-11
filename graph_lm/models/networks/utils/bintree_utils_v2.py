@@ -4,7 +4,7 @@ import tensorflow as tf
 from tensorflow.contrib import slim
 
 
-def binary_tree_upward_messages_v2(inp, hidden_dim):
+def binary_tree_upward_messages_v2(inp, hidden_dim, fc_fn=slim.fully_connected):
     """
 
     :param inp: (n, 2L, D)
@@ -16,13 +16,13 @@ def binary_tree_upward_messages_v2(inp, hidden_dim):
     k = 2
     l = lk // k
     h = inp
-    h = slim.fully_connected(
+    h = fc_fn(
         inputs=h,
         num_outputs=hidden_dim,
         activation_fn=tf.nn.leaky_relu,
         scope='up_mlp_1'
     )  # (n,l, 2, d)
-    h = slim.fully_connected(
+    h = fc_fn(
         inputs=h,
         num_outputs=hidden_dim,
         activation_fn=tf.nn.leaky_relu,
@@ -34,7 +34,7 @@ def binary_tree_upward_messages_v2(inp, hidden_dim):
     return h
 
 
-def binary_tree_upward_v2(inputs, hidden_dim):
+def binary_tree_upward_v2(inputs, hidden_dim, fc_fn=slim.fully_connected):
     with tf.variable_scope('binary_tree_upward'):
         msg_0 = tf.get_variable(
             shape=(1, 1, 1, hidden_dim,),
@@ -52,7 +52,8 @@ def binary_tree_upward_v2(inputs, hidden_dim):
                 inp = tf.concat([input_t, msg_t], axis=-1)
                 msg_t = binary_tree_upward_messages_v2(
                     inp=inp,
-                    hidden_dim=hidden_dim
+                    hidden_dim=hidden_dim,
+                    fc_fn=fc_fn
                 )
                 msgs.append(msg_t)
         msgs.reverse()
@@ -62,7 +63,7 @@ def binary_tree_upward_v2(inputs, hidden_dim):
         return msgs
 
 
-def binary_tree_downward_messages_v2(inp, hidden_dim):
+def binary_tree_downward_messages_v2(inp, hidden_dim, fc_fn=slim.fully_connected):
     """
 
     :param inp: (n, L, D)
@@ -74,13 +75,13 @@ def binary_tree_downward_messages_v2(inp, hidden_dim):
     k = 2
     lk = l * k
     h = inp
-    h = slim.fully_connected(
+    h = fc_fn(
         inputs=h,
         num_outputs=hidden_dim,
         activation_fn=tf.nn.leaky_relu,
         scope='down_mlp_1'
     )  # (n,l, d)
-    h = slim.fully_connected(
+    h = fc_fn(
         inputs=h,
         num_outputs=hidden_dim*k,
         activation_fn=tf.nn.leaky_relu,
@@ -90,7 +91,7 @@ def binary_tree_downward_messages_v2(inp, hidden_dim):
     return h
 
 
-def binary_tree_downward_v2(inputs, hidden_dim):
+def binary_tree_downward_v2(inputs, hidden_dim, fc_fn=slim.fully_connected):
     with tf.variable_scope('binary_tree_downward'):
         msg_0 = tf.get_variable(
             shape=(1, 1, hidden_dim,),
@@ -105,7 +106,8 @@ def binary_tree_downward_v2(inputs, hidden_dim):
                 inp = tf.concat([input_t, msg_t], axis=-1)
                 msg_t = binary_tree_downward_messages_v2(
                     inp=inp,
-                    hidden_dim=hidden_dim
+                    hidden_dim=hidden_dim,
+                    fc_fn=fc_fn
                 )
                 msgs.append(msg_t)
         assert len(inputs) == len(msgs)

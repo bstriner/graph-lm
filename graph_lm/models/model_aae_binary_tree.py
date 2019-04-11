@@ -4,20 +4,13 @@ import tensorflow as tf
 from tensorflow.contrib import slim
 from tensorflow.contrib.gan.python.train import RunTrainOpsHook
 
-from graph_lm.models.networks.utils.dag_utils import build_dag
 from .networks.decoder_dag_supervised import vae_decoder_dag_supervised
-from .networks.discriminator_dag_supervised import discriminator_dag_supervised
-from .networks.encoder_dag_gan import encoder_dag_gan
 from ..anneal import get_kl_scale_logistic
 from ..callbacks.dag_callback import DAGHook
 
-
-from .estimators.vae_ctc_estimator import ctc_estimator
 from .networks.decoder_bintree_attention import decoder_bintree_attention
-from .networks.encoder_bintree_attention import encoder_bintree_attn
 from .networks.encoder_bintree_recurrent_attention import encoder_bintree_recurrent_attn_aae
 from ..data.word import SENTENCE_LENGTH, TEXT
-from ..kl import kl_array
 
 import math
 def make_model_aae_binary_tree(

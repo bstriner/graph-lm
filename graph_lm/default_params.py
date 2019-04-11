@@ -41,6 +41,7 @@ def default_params():
 
         encoder_dim=256,
         decoder_dim=256,
+        discriminator_dim=256,
         latent_dim=256,
         attention_dim=128,
         noise_dim=256,

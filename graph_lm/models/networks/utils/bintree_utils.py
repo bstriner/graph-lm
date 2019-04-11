@@ -358,9 +358,9 @@ def binary_tree_downward(inputs, hidden_dim):
         return msgs
 
 
-def concat_layers(*layers):
+def concat_layers(*layers, axis=-1):
     return [
-        tf.concat(ls, axis=-1)
+        tf.concat(ls, axis=axis)
         for ls in zip(*layers)
     ]
 

@@ -7,7 +7,7 @@ from .networks.decoder_dag import vae_decoder_dag
 from .networks.encoder_simple import vae_flat_encoder_simple
 from ..anneal import get_penalty_scale_logistic
 from ..callbacks.dag_callback import DAGHook
-from ..kl import kl
+from graph_lm.models.estimators.kl import kl
 
 
 def make_model_vae_dag(

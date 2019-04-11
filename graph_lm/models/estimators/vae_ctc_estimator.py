@@ -2,6 +2,7 @@ import os
 
 import tensorflow as tf
 from tensorflow.contrib import slim
+from tensorflow.python.estimator.estimator_lib import EstimatorSpec
 
 from ...callbacks.ctc_callback import CTCHook
 from ...sparse import sparsify
@@ -9,28 +10,36 @@ from ...sparse import sparsify
 
 def ctc_estimator(
         tokens, token_lengths, logits, glogits,
-        sequence_mask, sequence_length_ctc, vocab, run_config, params, mode):
-    ctc_labels_sparse = sparsify(tf.cast(tokens, tf.int32), sequence_mask)
-    ctc_labels = tf.sparse_tensor_to_dense(ctc_labels_sparse, default_value=-1)
-    # ctc_labels = tf.sparse_transpose(ctc_labels, (1,0))
-    print("Labels: {}".format(ctc_labels))
-    # tf.tile(tf.pow([2], depth), (n,))
-    print("CTC: {}, {}, {}".format(ctc_labels, logits, sequence_length_ctc))
-    ctc_loss_raw = tf.nn.ctc_loss(
-        labels=ctc_labels_sparse,
-        sequence_length=sequence_length_ctc,
-        inputs=logits,
-        # sequence_length=tf.shape(logits)[0],
-        # ctc_merge_repeated=False,
-        # preprocess_collapse_repeated=False,
-        # ctc_merge_repeated=True,
-        # ignore_longer_outputs_than_inputs=False,
-        time_major=True
-    )
-    ctc_loss = tf.reduce_mean(ctc_loss_raw)
-    tf.losses.add_loss(ctc_loss)
+        sequence_mask, sequence_length_ctc, vocab, run_config, params, mode,
+        model_scope,
+        training_hooks=[]):
 
-    total_loss = tf.losses.get_total_loss()
+    with tf.name_scope(model_scope+"/"):
+        ctc_labels_sparse = sparsify(tf.cast(tokens, tf.int32), sequence_mask)
+        ctc_labels = tf.sparse_tensor_to_dense(ctc_labels_sparse, default_value=-1)
+        # ctc_labels = tf.sparse_transpose(ctc_labels, (1,0))
+        print("Labels: {}".format(ctc_labels))
+        # tf.tile(tf.pow([2], depth), (n,))
+        print("CTC: {}, {}, {}".format(ctc_labels, logits, sequence_length_ctc))
+        ctc_loss_raw = tf.nn.ctc_loss(
+            labels=ctc_labels_sparse,
+            sequence_length=sequence_length_ctc,
+            inputs=logits,
+            # sequence_length=tf.shape(logits)[0],
+            # ctc_merge_repeated=False,
+            # preprocess_collapse_repeated=False,
+            # ctc_merge_repeated=True,
+            # ignore_longer_outputs_than_inputs=False,
+            time_major=True
+        )
+        ctc_loss = tf.reduce_mean(ctc_loss_raw, name='ctc_loss')
+        tf.losses.add_loss(ctc_loss)
+
+    losses = tf.losses.get_losses(scope=model_scope)
+    print("Estimator losses: {}".format(losses))
+    losses += tf.losses.get_regularization_losses(scope=model_scope)
+    total_loss = tf.add_n(losses)
+    updates = tf.get_collection(key=tf.GraphKeys.UPDATE_OPS, scope=model_scope)
 
     autoencode_hook = CTCHook(
         logits=logits,
@@ -55,18 +64,22 @@ def ctc_estimator(
 
     # Train
     optimizer = tf.train.AdamOptimizer(params.lr)
+    variables = tf.trainable_variables(scope=model_scope)
     train_op = slim.learning.create_train_op(
         total_loss,
         optimizer,
-        clip_gradient_norm=params.clip_gradient_norm)
+        clip_gradient_norm=params.clip_gradient_norm,
+        variables_to_train=variables,
+        update_ops=updates)
     eval_metric_ops = {
         'ctc_loss_eval': tf.metrics.mean(ctc_loss_raw),
         'token_lengths_eval': tf.metrics.mean(token_lengths)
     }
 
-    return tf.estimator.EstimatorSpec(
+    return EstimatorSpec(
         mode=mode,
         loss=total_loss,
         eval_metric_ops=eval_metric_ops,
         evaluation_hooks=evaluation_hooks,
+        training_hooks=training_hooks,
         train_op=train_op)

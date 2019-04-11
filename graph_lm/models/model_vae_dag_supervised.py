@@ -7,7 +7,7 @@ from graph_lm.models.networks.utils.dag_utils import build_dag
 from .networks.decoder_dag_supervised import vae_decoder_dag_supervised
 from .networks.encoder_dag import encoder_dag
 from ..callbacks.dag_callback import DAGHook
-from ..kl import kl
+from graph_lm.models.estimators.kl import kl
 
 
 def make_model_vae_dag_supervised(

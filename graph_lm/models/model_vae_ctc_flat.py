@@ -6,7 +6,7 @@ from tensorflow.contrib import slim
 from .networks.decoder_flat import vae_flat_decoder
 from .networks.encoder_flat import vae_flat_encoder
 from ..callbacks.ctc_callback import CTCHook
-from ..kl import kl
+from graph_lm.models.estimators.kl import kl
 from ..sparse import sparsify
 
 

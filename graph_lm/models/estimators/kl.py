@@ -1,7 +1,7 @@
 import tensorflow as tf
 import tensorflow_probability as tfp
 
-from .anneal import get_kl_scale_logistic
+from ...anneal import get_kl_scale_logistic
 
 tfd = tfp.distributions
 
@@ -63,9 +63,7 @@ def kl_array(mus, logsigmas, params, n):
         params=params,
         n=n
     ) for mu, logsigma in zip(mus, logsigmas)]
-    latent_samples = [r[0] for r in rets]
-    latent_prior_samples = [r[1] for r in rets]
-    kl_loss_raws = [r[2] for r in rets]
+    latent_samples, latent_prior_samples, kl_loss_raws = [list(l) for l in zip(*rets)]
     kl_loss_raw = tf.add_n(kl_loss_raws)
     kl_scale = get_kl_scale_logistic(params)
     kl_loss = kl_scale * kl_loss_raw
