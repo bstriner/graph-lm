@@ -111,17 +111,19 @@ def make_model_binary_tree_attn(
                 dis_labels_real = tf.ones(shape=(n,), dtype=tf.float32)
                 dis_labels_fake = -tf.ones(shape=(n,), dtype=tf.float32)
                 dis_labels = tf.concat([dis_labels_real, dis_labels_fake], axis=0)
-                wgan_loss_d = tf.reduce_mean(dis_labels * dis_out)
-                wgan_loss_g_raw = -wgan_loss_d
+                wgan_loss_d_raw = tf.reduce_mean(dis_labels * dis_out)
+                wgan_loss_g_raw = -wgan_loss_d_raw
                 wgan_scale = get_penalty_scale_logistic(params=params)
                 wgan_loss_g = wgan_scale * wgan_loss_g_raw
-                tf.summary.scalar("wgan_loss_d", wgan_loss_d)
-                tf.summary.scalar("wgan_loss_g_raw", wgan_loss_g_raw)
-                tf.summary.scalar("wgan_scale", wgan_scale)
-                tf.summary.scalar("wgan_loss_g", wgan_loss_g)
+                wgan_loss_d = wgan_scale * wgan_loss_d_raw
                 tf.losses.add_loss(tf.identity(wgan_loss_d, name='wgan_loss_d'))
             with tf.name_scope("autoencoder/"):
                 tf.losses.add_loss(tf.identity(wgan_loss_g, name="wgan_loss_g"))
+            tf.summary.scalar("wgan_loss_d_raw", wgan_loss_d_raw)
+            tf.summary.scalar("wgan_loss_g_raw", wgan_loss_g_raw)
+            tf.summary.scalar("wgan_scale", wgan_scale)
+            tf.summary.scalar("wgan_loss_g", wgan_loss_g)
+            tf.summary.scalar("wgan_loss_d", wgan_loss_d)
 
             dis_losses = tf.losses.get_losses(scope=discriminator_scope.name)
             print("Discriminator losses: {}".format(dis_losses))

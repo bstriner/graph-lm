@@ -9,8 +9,8 @@
   "dis_lr": 3e-4,
   "discriminator_steps": 5,
   "batch_norm": true,
-  "encoder_dim": 512,
-  "decoder_dim": 512,
+  "encoder_dim": 300,
+  "decoder_dim": 300,
   "discriminator_dim": 256,
   "latent_dim": 128,
   "attention_dim": 128
