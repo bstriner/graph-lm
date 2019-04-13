@@ -28,6 +28,7 @@ def encoder_bintree_attn_base(inputs, token_lengths, params, weights_regularizer
         h = tf.concat(hidden_state_final, axis=-1)  # (layers*directions, N, D)
         h = tf.transpose(h, (1, 0, 2))  # (N,layers*directions,D)
         h = tf.reshape(h, (n, h.shape[1].value * h.shape[2].value))  # (N, layers*directions*D)
+        """
         if params.batch_norm:
             h = slim.batch_norm(inputs=h, is_training=is_training)
         h = slim.fully_connected(
@@ -37,6 +38,7 @@ def encoder_bintree_attn_base(inputs, token_lengths, params, weights_regularizer
             scope='encoder_mlp_1',
             weights_regularizer=weights_regularizer
         )
+        """
         if params.batch_norm:
             h = slim.batch_norm(inputs=h, is_training=is_training)
         flat_encoding = slim.fully_connected(

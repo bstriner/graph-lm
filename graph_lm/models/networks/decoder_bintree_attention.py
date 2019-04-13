@@ -9,11 +9,13 @@ def decoder_bintree_attention(latent_layers, vocab_size, params, weights_regular
     assert depth >= 0
 
     hs = latent_layers
+    """
     messages_up = binary_tree_upward_v2(
         inputs=hs,
         hidden_dim=params.decoder_dim
     )
     hs = concat_layers(hs, messages_up)
+    """
     messages_down = binary_tree_downward_v2(
         inputs=hs,
         hidden_dim=params.decoder_dim

@@ -205,7 +205,7 @@ def binary_tree_down(x0, depth, hidden_dim, inputs=None):
     h = slim.fully_connected(
         inputs=h,
         num_outputs=hidden_dim,
-        activation_fn=None,
+        activation_fn=tf.nn.leaky_relu,
         scope='down_x0'
     )
     layers = [h]
