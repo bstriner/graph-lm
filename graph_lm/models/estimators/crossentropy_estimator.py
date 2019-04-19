@@ -8,7 +8,7 @@ from ...callbacks.ctc_callback import CTCHook
 from ...sparse import sparsify
 
 
-def ctc_estimator(
+def crossentropy_estimator(
         tokens, token_lengths, logits, glogits,
         sequence_mask, sequence_length_ctc, vocab, run_config, params, mode,
         model_scope,

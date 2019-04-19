@@ -1,5 +1,3 @@
-import math
-
 import tensorflow as tf
 from tensorflow.contrib import slim
 
@@ -29,7 +27,7 @@ def binary_tree_upward_messages_v2(inp, hidden_dim, fc_fn=slim.fully_connected):
         scope='up_mlp_2'
     )  # (n,l, 2, d)
     h = tf.reshape(
-        h, (n, l, k*hidden_dim)
+        h, (n, l, k * hidden_dim)
     )
     return h
 
@@ -45,7 +43,7 @@ def binary_tree_upward_v2(inputs, hidden_dim, fc_fn=slim.fully_connected):
         k = 2
         n = tf.shape(inputs[-1])[0]
         msg_t = tf.tile(msg_0, (n, inputs[-1].shape[1].value, k, 1))
-        msg_t = tf.reshape(msg_t, (n, inputs[-1].shape[1].value, hidden_dim*k))
+        msg_t = tf.reshape(msg_t, (n, inputs[-1].shape[1].value, hidden_dim * k))
         msgs = [msg_t]
         for t, input_t in enumerate(reversed(inputs[1:])):
             with tf.variable_scope('binary_tree_upward_pass', reuse=t > 0):
@@ -83,11 +81,11 @@ def binary_tree_downward_messages_v2(inp, hidden_dim, fc_fn=slim.fully_connected
     )  # (n,l, d)
     h = fc_fn(
         inputs=h,
-        num_outputs=hidden_dim*k,
+        num_outputs=hidden_dim * k,
         activation_fn=tf.nn.leaky_relu,
         scope='down_mlp_2'
     )  # (n,l, d*k)
-    h = tf.reshape(h, (n, lk, hidden_dim)) # (n, l*k, d)
+    h = tf.reshape(h, (n, lk, hidden_dim))  # (n, l*k, d)
     return h
 
 
@@ -114,4 +112,3 @@ def binary_tree_downward_v2(inputs, hidden_dim, fc_fn=slim.fully_connected):
         for i, m in zip(inputs, msgs):
             assert i.shape[1].value == m.shape[1].value
         return msgs
-

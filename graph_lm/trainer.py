@@ -13,7 +13,7 @@ from .models.model_vae_binary_tree import make_model_vae_binary_tree
 from .models.model_vae_ctc_flat import make_model_vae_ctc_flat
 from .models.model_vae_ctc_flat_attn import make_model_vae_ctc_flat_attn
 from .models.model_vae_dag import make_model_vae_dag
-from .models.model_vae_dag_supervised import make_model_vae_dag_supervised
+from .models.model_dag_supervised import make_model_vae_dag_supervised
 from .models.model_binary_tree_attn import make_model_binary_tree_attn
 
 

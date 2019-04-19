@@ -63,7 +63,7 @@ def sn_kernel(shape, scope, init=tf.initializers.glorot_normal()):
                     scale = 1.
                 else:
                     scale = 1.
-                kernel = tf.div(w, sn * scale, name='kernel_sn')
+                kernel = tf.divide(w, sn * scale, name='kernel_sn')
                 s, u, v = tf.linalg.svd(tf.reshape(kernel, (-1, tf.shape(kernel)[-1])))
                 tf.summary.scalar(vs.name + "/max_sv", tf.reduce_max(tf.abs(s)))
                 print("New kernel: {}".format(kernel_name))

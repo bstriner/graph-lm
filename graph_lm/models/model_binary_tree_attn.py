@@ -5,7 +5,7 @@ from tensorflow.contrib.gan.python.train import RunTrainOpsHook
 
 from graph_lm.models.estimators.kl import kl_array
 from .estimators.aae import sample_aae_array
-from .estimators.vae_ctc_estimator import ctc_estimator
+from .estimators.ctc_estimator import ctc_estimator
 from .networks.decoder_bintree_attention import decoder_bintree_attention
 from .networks.discriminator_bintree import discriminator_bintree_fn
 from .networks.encoder_bintree_recurrent_attention import encoder_bintree_recurrent_attn_vae
@@ -112,7 +112,7 @@ def make_model_binary_tree_attn(
                 dis_labels_fake = -tf.ones(shape=(n,), dtype=tf.float32)
                 dis_labels = tf.concat([dis_labels_real, dis_labels_fake], axis=0)
                 wgan_loss_d_raw = tf.reduce_mean(dis_labels * dis_out)
-                wgan_loss_g_raw = -wgan_loss_d_raw
+                wgan_loss_g_raw = tf.square(wgan_loss_d_raw)
                 wgan_scale = get_penalty_scale_logistic(params=params)
                 wgan_loss_g = wgan_scale * wgan_loss_g_raw
                 wgan_loss_d = wgan_scale * wgan_loss_d_raw

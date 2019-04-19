@@ -30,7 +30,7 @@ def get_penalty_scale_logistic(params):
 def get_anneal_scale_logistic(anneal_start, anneal_end, anneal_min, anneal_max):
     if anneal_end > 0:
         mid = (anneal_end + anneal_start) / 2
-        mult = (anneal_end - anneal_start) / 16
+        mult = (anneal_end - anneal_start) / 8
         scale = (tf.cast(tf.train.get_or_create_global_step(), tf.float32) - mid) / mult
         scale = tf.nn.sigmoid(scale)
         anneal_scale = anneal_max - anneal_min
