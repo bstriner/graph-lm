@@ -10,7 +10,7 @@ from ..callbacks.dag_callback import DAGHook
 from graph_lm.models.estimators.kl import kl
 
 
-def make_model_dag_supervised(
+def make_model_dag_unsupervised(
         run_config,
         vocab
 ):
