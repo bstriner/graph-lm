@@ -18,8 +18,12 @@ class CTCHook(SessionRunHook):
         self.path = path
         self.name = name
 
+        swapped_logits = tf.concat(
+            [logits[...,1:], logits[:,:,0:1]],
+            axis=-1
+        )
         (self.generated_sparse,), _ = tf.nn.ctc_beam_search_decoder_v2(
-            inputs=logits,
+            inputs=swapped_logits,
             sequence_length=lengths,
             #merge_repeated=merge_repeated,
             top_paths=1
@@ -47,6 +51,6 @@ class CTCHook(SessionRunHook):
                 '{} Raw'.format(self.name)])
             for i in range(n):
                 tt = decode_words_ctc(true[i], vocab=self.vocab)
-                tg = decode_words_ctc(gen[i], vocab=self.vocab)
+                tg = decode_words(gen[i], vocab=self.vocab)
                 tgr = decode_words_ctc(gen_raw[i], vocab=self.vocab)
                 w.writerow([i, tt, tg, tgr])
