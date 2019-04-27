@@ -15,6 +15,10 @@ def decode_words(ids, vocab):
     return " ".join(vocab[i] if i < len(vocab) else BLANK for i in ids if i >= 0)
 
 
+def decode_words_ctc(ids, vocab):
+    return " ".join(vocab[i-1] if i-1 < len(vocab) and i > 0 else BLANK for i in ids if i >= 0)
+
+
 def calculate_vocabulary(dataset, min_count=0):
     vocab = Counter()
     for sentence in dataset:
