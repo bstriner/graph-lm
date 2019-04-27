@@ -23,16 +23,18 @@ def ctc_estimator(
         print("glogits: {}".format(glogits))
         # tf.tile(tf.pow([2], depth), (n,))
         print("CTC: {}, {}, {}".format(ctc_labels, logits, sequence_length_ctc))
-        ctc_loss_raw = tf.nn.ctc_loss(
-            labels=ctc_labels_sparse,
-            sequence_length=sequence_length_ctc,
-            inputs=logits,
+        ctc_loss_raw = tf.nn.ctc_loss_v2(
+            labels=tokens,
+            label_length=token_lengths,
+            logits=logits,
+            logit_length=sequence_length_ctc,
+            blank_index=-1
             # sequence_length=tf.shape(logits)[0],
-            ctc_merge_repeated=True,
+            # ctc_merge_repeated=True,
             # preprocess_collapse_repeated=False,
             # ctc_merge_repeated=True,
             # ignore_longer_outputs_than_inputs=False,
-            time_major=True
+            # time_major=True
         )
         ctc_loss = tf.reduce_mean(ctc_loss_raw, name='ctc_loss')
         tf.losses.add_loss(ctc_loss)
