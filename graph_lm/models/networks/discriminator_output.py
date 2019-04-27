@@ -10,20 +10,14 @@ def discriminator_output(x, params, weights_regularizer=None, reuse=False, is_tr
     # Y: (N,*, V)
     with tf.variable_scope('output_discriminator', reuse=reuse):
         h = x
-        h = sn_fully_connected(
-            inputs=h,
-            num_outputs=params.discriminator_dim,
-            activation_fn=tf.nn.leaky_relu,
-            scope='output_mlp_1',
-            weights_regularizer=weights_regularizer
-        )
-        h = sn_fully_connected(
-            inputs=h,
-            num_outputs=params.discriminator_dim,
-            activation_fn=tf.nn.leaky_relu,
-            scope='output_mlp_2',
-            weights_regularizer=weights_regularizer
-        )
+        for i in range(params.discriminator_layers):
+            h = sn_fully_connected(
+                inputs=h,
+                num_outputs=params.discriminator_dim,
+                activation_fn=tf.nn.leaky_relu,
+                scope='output_mlp_{}'.format(i),
+                weights_regularizer=weights_regularizer
+            )
         h = sn_fully_connected(
             inputs=h,
             num_outputs=1,

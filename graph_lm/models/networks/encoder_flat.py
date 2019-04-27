@@ -4,7 +4,7 @@ from tensorflow.contrib import slim
 from graph_lm.models.networks.utils.rnn_util import lstm
 
 
-def vae_flat_encoder(tokens, token_lengths, vocab_size, params, n, weights_regularizer=None, is_training=True):
+def encoder_flat(tokens, token_lengths, vocab_size, params, n, weights_regularizer=None, is_training=True):
     with tf.variable_scope('encoder'):
         h = tf.transpose(tokens, (1, 0))  # (L,N)
         embeddings = tf.get_variable(
@@ -16,7 +16,7 @@ def vae_flat_encoder(tokens, token_lengths, vocab_size, params, n, weights_regul
         h = tf.nn.embedding_lookup(embeddings, h)  # (L, N, D)
         _, h = lstm(
             x=h,
-            num_layers=3,
+            num_layers=params.encoder_layers,
             num_units=params.encoder_dim,
             bidirectional=True,
             sequence_lengths=token_lengths
@@ -29,6 +29,8 @@ def vae_flat_encoder(tokens, token_lengths, vocab_size, params, n, weights_regul
         print("h3: {}".format(h))
         h = tf.reshape(h, (n, h.shape[1].value * h.shape[2].value))  # (N, 2D)
         print("h4: {}".format(h))
+        if params.batch_norm:
+            h = slim.batch_norm(h, is_training=is_training)
         h = slim.fully_connected(
             inputs=h,
             num_outputs=params.encoder_dim,
@@ -36,6 +38,8 @@ def vae_flat_encoder(tokens, token_lengths, vocab_size, params, n, weights_regul
             scope='encoder_mlp_1',
             weights_regularizer=weights_regularizer
         )
+        if params.batch_norm:
+            h = slim.batch_norm(h, is_training=is_training)
         h = slim.fully_connected(
             inputs=h,
             num_outputs=params.encoder_dim,
@@ -43,7 +47,8 @@ def vae_flat_encoder(tokens, token_lengths, vocab_size, params, n, weights_regul
             scope='encoder_mlp_2',
             weights_regularizer=weights_regularizer
         )
-        h = slim.batch_norm(h, is_training=is_training)
+        if params.batch_norm:
+            h = slim.batch_norm(h, is_training=is_training)
         mu = slim.fully_connected(
             inputs=h,
             num_outputs=params.latent_dim,

@@ -19,6 +19,8 @@ def ctc_estimator(
         ctc_labels = tf.sparse_tensor_to_dense(ctc_labels_sparse, default_value=-1)
         # ctc_labels = tf.sparse_transpose(ctc_labels, (1,0))
         print("Labels: {}".format(ctc_labels))
+        print("logits: {}".format(logits))
+        print("glogits: {}".format(glogits))
         # tf.tile(tf.pow([2], depth), (n,))
         print("CTC: {}, {}, {}".format(ctc_labels, logits, sequence_length_ctc))
         ctc_loss_raw = tf.nn.ctc_loss(

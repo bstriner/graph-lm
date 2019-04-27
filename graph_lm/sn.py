@@ -102,7 +102,7 @@ weights_regularizer=None
             # Cast the inputs to self.dtype, which is the variable dtype. We do not
             # cast if `should_cast_variables` is True, as in that case the variable
             # will be automatically casted to inputs.dtype.
-            outputs = tf.mat_mul(inputs, kernel)
+            outputs = tf.matmul(inputs, kernel)
         outputs = tf.nn.bias_add(outputs, bias)
         if activation_fn is not None:
             return activation_fn(outputs)  # pylint: disable=not-callable

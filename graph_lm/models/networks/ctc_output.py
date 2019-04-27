@@ -12,15 +12,16 @@ def calc_ctc_output(x, vocab_size, params, weights_regularizer=None, reuse=False
         h = x
         if params.batch_norm:
             h = slim.batch_norm(h, is_training=is_training)
-        h = slim.fully_connected(
-            inputs=h,
-            num_outputs=params.decoder_dim,
-            activation_fn=tf.nn.leaky_relu,
-            scope='output_mlp_1',
-            weights_regularizer=weights_regularizer
-        )
-        if params.batch_norm:
-            h = slim.batch_norm(h, is_training=is_training)
+        for i in range(params.decoder_layers):
+            h = slim.fully_connected(
+                inputs=h,
+                num_outputs=params.decoder_dim,
+                activation_fn=tf.nn.leaky_relu,
+                scope='decoder_output_mlp_{}'.format(i),
+                weights_regularizer=weights_regularizer
+            )
+            if params.batch_norm:
+                h = slim.batch_norm(h, is_training=is_training)
         h = slim.fully_connected(
             inputs=h,
             num_outputs=vocab_size + 1,

@@ -38,10 +38,14 @@ def get_hparams(model_dir, validate=True):
 def default_params():
     return HParams(
         model='ctasdsac',
+        gan_loss='v1',
 
         encoder_dim=256,
+        encoder_layers=3,
         decoder_dim=256,
+        decoder_layers=2,
         discriminator_dim=256,
+        discriminator_layers=2,
         latent_dim=256,
         attention_dim=128,
         noise_dim=256,

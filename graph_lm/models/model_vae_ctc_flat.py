@@ -4,7 +4,7 @@ import tensorflow as tf
 from tensorflow.contrib import slim
 
 from .networks.decoder_flat import vae_flat_decoder
-from .networks.encoder_flat import vae_flat_encoder
+from .networks.encoder_flat import encoder_flat
 from ..callbacks.ctc_callback import CTCHook
 from graph_lm.models.estimators.kl import kl
 from ..sparse import sparsify
@@ -39,7 +39,7 @@ def make_model_vae_ctc_flat(
             weights_regularizer = None
 
         # Encoder
-        mu, logsigma = vae_flat_encoder(
+        mu, logsigma = encoder_flat(
             tokens=tokens,
             token_lengths=token_lengths,
             vocab_size=vocab_size,

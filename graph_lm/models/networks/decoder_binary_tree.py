@@ -18,8 +18,7 @@ def decoder_binary_tree(latent, vocab_size, params, weights_regularizer=None, is
     tree_layers = binary_tree_resnet(
         x0=h,
         depth=params.tree_depth,
-        hidden_dim=params.decoder_dim,
-        reuse=reuse
+        hidden_dim=params.decoder_dim
     )
     indices = infix_indices(depth)
     flat_layers = stack_tree(tree_layers, indices=indices)  # (L,N,V)
@@ -29,4 +28,4 @@ def decoder_binary_tree(latent, vocab_size, params, weights_regularizer=None, is
         params=params,
         weights_regularizer=weights_regularizer,
         is_training=is_training)
-    return tree_layers, logits
+    return logits
