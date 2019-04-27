@@ -46,7 +46,7 @@ class CTCHook(SessionRunHook):
                 self.name,
                 '{} Raw'.format(self.name)])
             for i in range(n):
-                tt = decode_words(true[i], vocab=self.vocab)
+                tt = decode_words_ctc(true[i], vocab=self.vocab)
                 tg = decode_words_ctc(gen[i], vocab=self.vocab)
                 tgr = decode_words_ctc(gen_raw[i], vocab=self.vocab)
                 w.writerow([i, tt, tg, tgr])

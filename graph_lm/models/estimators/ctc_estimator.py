@@ -3,6 +3,7 @@ import os
 import tensorflow as tf
 from tensorflow.contrib import slim
 from tensorflow.python.estimator.estimator_lib import EstimatorSpec
+from tensorflow.python.ops.ctc_ops import ctc_loss_dense
 
 from ...callbacks.ctc_callback import CTCHook
 from ...sparse import sparsify
@@ -13,9 +14,9 @@ def ctc_estimator(
         sequence_mask, sequence_length_ctc, vocab, run_config, params, mode,
         model_scope,
         training_hooks=[]):
-
-    with tf.name_scope(model_scope+"/"):
-        ctc_labels_sparse = sparsify(tf.cast(tokens, tf.int32), sequence_mask)
+    with tf.name_scope(model_scope + "/"):
+        tok_1 = tokens + 1
+        ctc_labels_sparse = sparsify(tf.cast(tok_1, tf.int32), sequence_mask)
         ctc_labels = tf.sparse_tensor_to_dense(ctc_labels_sparse, default_value=-1)
         # ctc_labels = tf.sparse_transpose(ctc_labels, (1,0))
         print("Labels: {}".format(ctc_labels))
@@ -23,19 +24,26 @@ def ctc_estimator(
         print("glogits: {}".format(glogits))
         # tf.tile(tf.pow([2], depth), (n,))
         print("CTC: {}, {}, {}".format(ctc_labels, logits, sequence_length_ctc))
-        ctc_loss_raw = tf.nn.ctc_loss_v2(
-            labels=tokens+1,
-            label_length=token_lengths,
-            logits=logits,
-            logit_length=sequence_length_ctc,
-            #blank_index=-1
+        if tf.flags.FLAGS.gpu_ctc:
+            ctc_loss_raw = ctc_loss_dense(
+                labels=tok_1,
+                label_length=token_lengths,
+                logits=logits,
+                logit_length=sequence_length_ctc)
+        else:
+            with tf.device("/cpu:0"):
+                ctc_loss_raw = ctc_loss_dense(
+                    labels=tok_1,
+                    label_length=token_lengths,
+                    logits=logits,
+                    logit_length=sequence_length_ctc)
+            # blank_index=-1
             # sequence_length=tf.shape(logits)[0],
             # ctc_merge_repeated=True,
             # preprocess_collapse_repeated=False,
             # ctc_merge_repeated=True,
             # ignore_longer_outputs_than_inputs=False,
             # time_major=True
-        )
         ctc_loss = tf.reduce_mean(ctc_loss_raw, name='ctc_loss')
         tf.losses.add_loss(ctc_loss)
 
