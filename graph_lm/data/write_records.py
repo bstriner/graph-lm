@@ -9,6 +9,7 @@ from tqdm import tqdm
 from typing import Dict, Generator, Iterable, List
 
 from .calculate_vocabulary import UNK
+from .record_writer import ShardRecordWriter
 from .word import INT_FIELDS, SENTENCE_LENGTH, TEXT_FIELDS, Word
 
 
@@ -93,7 +94,7 @@ def write_records_parsed(sentences: Iterable[List[Word]], output_file, wordmap, 
 def write_records_parsed_v2(
         sentences: Iterable[List[Word]],
         output_file: str,
-        vocabmaps: Dict[str,Dict[str, int]],
+        vocabmaps: Dict[str, Dict[str, int]],
         int_fields=INT_FIELDS,
         text_fields=TEXT_FIELDS,
         total=None):
@@ -120,6 +121,28 @@ def write_records_parsed_v2(
                 context=Features(feature=context_features),
                 feature_lists=tf.train.FeatureLists(feature_list=sequence_features),
             )
+            writer.write(example.SerializeToString())
+
+
+def write_records_raw(sentences, output_file, charmap, chunksize=1000, total=None):
+    with ShardRecordWriter(path_fmt=output_file, chunksize=chunksize) as writer:
+        for sentence in tqdm(sentences, total=total, desc='Writing Records'):
+            datum = encode_words(sentence, charmap)
+            data_size = feature_int64([datum.shape[0]])
+            data_feat = feature_int64_list(datum)
+            assert datum.shape[0] > 0
+            assert datum.ndim == 1
+            sequence_features = {
+                'text': data_feat
+            }
+            context_features = {
+                SENTENCE_LENGTH: data_size
+            }
+            example = tf.train.SequenceExample(
+                context=Features(feature=context_features),
+                feature_lists=tf.train.FeatureLists(feature_list=sequence_features),
+            )
+
             writer.write(example.SerializeToString())
 
 

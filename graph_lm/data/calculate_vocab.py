@@ -14,6 +14,16 @@ def calculate_map(vocab):
     return {k: i for i, k in enumerate(vocab)}
 
 
+def calculate_characters(dataset: Iterable[str]):
+    chars = set()
+    for sentence in dataset:
+        for char in sentence:
+            chars.add(char)
+    chars = list(chars)
+    chars.sort()
+    return chars
+
+
 def calculate_vocabs(dataset: Iterable[List[Word]], fields: List[str] = TEXT_FIELDS) -> Dict[str, Counter]:
     vocabs = {
         k: Counter() for k in fields
@@ -47,17 +57,26 @@ def calcuate_vocabmaps(vocablists: Dict[str, List[str]]) -> Dict[str, Dict[str, 
     }
 
 
+def calcuate_vocabmap(vocab: List[str]) -> Dict[str, int]:
+    return {word: i for i, word in enumerate(vocab)}
+
+
 def write_vocablists(vocablists: Dict[str, List[str]], path: str) -> None:
-    os.makedirs(path, exist_ok=True)
     for field, vocab in vocablists.items():
         output_path = os.path.join(path, "{}.npy".format(field))
-        np.save(
-            file=output_path,
-            arr=np.array(vocab, dtype=np.unicode_)
-        )
+        write_vocablist(vocab, output_path)
+
+
+def write_vocablist(vocablist: List[str], path: str) -> None:
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    np.save(
+        file=path,
+        arr=np.array(vocablist, dtype=np.unicode_)
+    )
 
 
 def read_vocablists(path: str, fields: List[str] = TEXT_FIELDS) -> Dict[str, List[str]]:
     return {
         field: np.load(file=os.path.join(path, "{}.npy".format(field))) for field in fields
+        if os.path.exists(os.path.join(path, "{}.npy".format(field)))
     }

@@ -9,12 +9,12 @@ from .data.calculate_vocab import read_vocablists
 from .data.inputs import make_input_fns
 from .default_params import get_hparams
 from .models.model_aae_dag_supervised import make_model_aae_dag_supervised
+from .models.model_binary_tree_attn import make_model_binary_tree_attn
 from .models.model_binary_tree_flat import make_model_binary_tree_flat
+from .models.model_dag_supervised import make_model_vae_dag_supervised
 from .models.model_vae_ctc_flat import make_model_vae_ctc_flat
 from .models.model_vae_ctc_flat_attn import make_model_vae_ctc_flat_attn
 from .models.model_vae_dag import make_model_dag_unsupervised
-from .models.model_dag_supervised import make_model_vae_dag_supervised
-from .models.model_binary_tree_attn import make_model_binary_tree_attn
 
 
 def make_model_fn(hparams, run_config, vocabs):
@@ -52,8 +52,9 @@ def train():
     hparams = get_hparams(model_dir, validate=True)
     vocabs = read_vocablists(path=tf.flags.FLAGS.data_dir)
     train_input_fn, eval_input_fn, test_input_fn = make_input_fns(
-        tf.flags.FLAGS.data_dir,
-        batch_size=tf.flags.FLAGS.batch_size)
+        data_dir=tf.flags.FLAGS.data_dir,
+        batch_size=tf.flags.FLAGS.batch_size,
+        data_version=tf.flags.FLAGS.data_version)
 
     # Model
     model_fn = make_model_fn(hparams=hparams, run_config=run_config, vocabs=vocabs)

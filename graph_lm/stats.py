@@ -4,15 +4,15 @@ import numpy as np
 import tensorflow as tf
 from tqdm import tqdm
 
-from .data.calculate_vocab import read_vocablists
-from .data.inputs import RECORDS, TRAIN, make_input_fn
-from .data.word import SENTENCE_LENGTH
+from .data.calculate_vocab import read_vocablists, write_vocablist
+from .data.inputs import RECORDS, TRAIN, make_input_fn, make_input_fns, find_input_files, PARSE_FNS, BATCH_SHAPES
+from .data.word import SENTENCE_LENGTH, TEXT
 TALLY_FILE = 'tally.npz'
 
 
 def bias_ops(ds: tf.data.Dataset, V):
     features, labels = ds.make_one_shot_iterator().get_next()
-    tokens = features['text']  # (N, L)
+    tokens = features[TEXT]  # (N, L)
     token_lengths = features[SENTENCE_LENGTH]  # (N,)
     vocab_tally = tf.get_local_variable(
         name='vocab_tally',
@@ -58,16 +58,19 @@ def bias_ops(ds: tf.data.Dataset, V):
     return vocab_tally, sentence_count, word_count, max_length, update
 
 
-def calc_bias(smoothing=0.01, input_fn=make_input_fn):
+def calc_bias(smoothing=0.01):
     # vocab = np.load(os.path.join(tf.flags.FLAGS.data_dir, VOCAB_FILE))
-    vocabs = read_vocablists(path=tf.flags.FLAGS.data_dir)
-    vocab=vocabs['text']
+    data_version = tf.flags.FLAGS.data_version
+    vocabs = read_vocablists(path=tf.flags.FLAGS.data_dir, fields=[TEXT])
+    vocab=vocabs[TEXT]
     V = vocab.shape[0]
-    train_input_fn = input_fn(
-        data_files=[os.path.join(tf.flags.FLAGS.data_dir, RECORDS[TRAIN])],
+    data_files = find_input_files(tf.flags.FLAGS.data_dir)
+    train_input_fn = make_input_fn(
+        data_files=data_files[TRAIN],
         batch_size=tf.flags.FLAGS.batch_size,
         shuffle=False,
-        num_epochs=1)
+        num_epochs=1,
+        data_version=data_version)
     train_ds = train_input_fn()
     tally_op, sents_op, words_op, max_length_op, update = bias_ops(ds=train_ds, V=V)
 
@@ -96,6 +99,7 @@ def calc_bias(smoothing=0.01, input_fn=make_input_fn):
     print("max_length: {}".format(max_length))
     assert_wordcount = np.sum(tally)
     print("assert wordcount: {}".format(assert_wordcount))
+    print("vocab size: {}".format(V))
     assert assert_wordcount == words
 
     np.savez(os.path.join(tf.flags.FLAGS.data_dir, TALLY_FILE),
