@@ -2,9 +2,8 @@ import tensorflow as tf
 from tensorflow.contrib import slim
 
 from graph_lm.models.networks.utils.attn_util import calc_attn_v2
+from graph_lm.models.networks.utils.bintree_utils import binary_tree_down, binary_tree_up, stack_tree_v2
 from graph_lm.models.networks.utils.rnn_util import lstm
-from graph_lm.models.networks.utils.bintree_utils import binary_tree_resnet, binary_tree_up, binary_tree_down, infix_indices, stack_tree
-
 from .embed_sentences import embed_sentences
 
 
@@ -49,7 +48,7 @@ def encoder_bintree_attn_base(inputs, token_lengths, params, weights_regularizer
             weights_regularizer=weights_regularizer
         )  # (N,D)
     with tf.variable_scope('bintree_attention'):
-        #todo: recurrent attention
+        # todo: recurrent attention
         output_tree = binary_tree_down(
             x0=flat_encoding,
             hidden_dim=params.encoder_dim,
@@ -81,9 +80,8 @@ def encoder_bintree_attn_base(inputs, token_lengths, params, weights_regularizer
             for output_proj in output_projs
         ]  # (n, ol, il)
 
-        attn_idx = infix_indices(params.tree_depth)
-        flat_attns = stack_tree(attns, indices=attn_idx)  # (L,N,V)
-        attn_img = tf.expand_dims(tf.transpose(flat_attns, (1,0,2)), axis=3)
+        flat_attns = stack_tree_v2(attns)
+        attn_img = tf.expand_dims(tf.transpose(flat_attns, (1, 0, 2)), axis=3)
         tf.summary.image('encoder_attention', attn_img)
 
         hs = [tf.matmul(

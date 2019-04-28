@@ -10,10 +10,10 @@
   "dis_lr": 3e-5,
   "discriminator_steps": 5,
   "batch_norm": false,
-  "encoder_dim": 300,
-  "decoder_dim": 300,
-  "discriminator_dim": 512,
-  "latent_dim": 128,
-  "attention_dim": 128,
-  "l2": 1e-6
+  "encoder_dim": 128,
+  "decoder_dim": 128,
+  "discriminator_dim": 192,
+  "latent_dim": 64,
+  "attention_dim": 64,
+  "l2": 1e-7
 }

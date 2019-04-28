@@ -3,7 +3,7 @@ import math
 import tensorflow as tf
 from tensorflow.contrib import slim
 
-
+import numpy as np
 def infix_indices(depth, stack=[]):
     if depth >= 0:
         left = infix_indices(depth - 1, stack + [0])
@@ -15,6 +15,17 @@ def infix_indices(depth, stack=[]):
     else:
         return []
 
+def flat_infix_indices(depth):
+    idx = infix_indices(depth=depth)
+    lengths = np.power(2, np.arange(depth+1,dtype=np.int32))
+    #print("lens: {}".format(lengths))
+    offsets = np.cumsum(lengths)-lengths
+    #print("offsets: {}".format(offsets))
+    infix_idx = np.zeros(shape=(len(idx)), dtype=np.int32)
+    for i, id in enumerate(idx):
+        d, j = tree_index_map(id)
+        infix_idx[i] = offsets[d]+j
+    return infix_idx
 
 def tree_index_map(idx):
     depth = len(idx)
@@ -37,6 +48,14 @@ def stack_tree(outputs, indices):
         slices.append(slice)
     stacked = tf.stack(slices, axis=0)  # (L,N,V)
     return stacked
+
+def stack_tree_v2(outputs):
+    idx = flat_infix_indices(len(outputs)-1)
+    h = tf.concat(outputs, axis=1) # (N,L,D)
+    h = tf.transpose(h, (1,0,2))
+    h = tf.gather(params=h, indices=idx, axis=0)
+    return h
+
 
 
 def calc_children_resnet(x, hidden_dim, inputs=None, weights_regularizer=None, reuse=None):

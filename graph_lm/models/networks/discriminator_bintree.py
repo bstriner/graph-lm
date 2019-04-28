@@ -1,8 +1,7 @@
-from .utils.bintree_utils import concat_layers, infix_indices, stack_tree
 import tensorflow as tf
 
 from .discriminator_output import discriminator_output
-from .utils.bintree_utils import concat_layers, infix_indices, stack_tree
+from .utils.bintree_utils import concat_layers
 from .utils.bintree_utils_v2 import binary_tree_downward_v2, binary_tree_upward_v2
 from ...sn import sn_fully_connected
 
@@ -30,13 +29,12 @@ def discriminator_bintree_fn(
         fc_fn=sn_fully_connected
     )
     hs = concat_layers(hs, messages_down)
-    indices = infix_indices(depth)
-    flat_layers = stack_tree(hs, indices=indices)  # (L,N,D)
+    h = tf.concat(hs, axis=1)  # (N, L, D)
     logits = discriminator_output(
-        flat_layers,
+        h,
         params=params,
         weights_regularizer=weights_regularizer,
-        is_training=is_training)  # (L,N,1)
-    logits = tf.reduce_mean(logits, axis=0)  # (N,1)
+        is_training=is_training)  # (N,L,1)
+    logits = tf.reduce_sum(logits, axis=1)  # (N,1)
     logits = tf.squeeze(logits, axis=1)  # (N,)
     return logits
