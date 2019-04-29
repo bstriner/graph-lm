@@ -5,7 +5,7 @@ import tensorflow as tf
 from graph_lm.data.calculate_vocab import calcuate_vocabmaps, calculate_vocablists, calculate_vocabs, combine_vocabs, \
     write_vocablists
 from graph_lm.data.conllu import CONLLU_FORMAT, make_conllu_dataset
-from graph_lm.data.inputs import RECORDS
+from graph_lm.data.inputs import RECORDS, SPLITS, RECORD_FMT
 from graph_lm.data.write_records import write_records_parsed_v2
 
 PTB_FILES = [
@@ -19,7 +19,7 @@ def main(_argv):
         'lemma': tf.flags.FLAGS.min_count
     }
     data_files = [os.path.join(tf.flags.FLAGS.data_dir, f) for f in PTB_FILES]
-    output_files = [os.path.join(tf.flags.FLAGS.output_dir, f) for f in RECORDS]
+    output_files = [os.path.join(tf.flags.FLAGS.output_dir, f, RECORD_FMT) for f in SPLITS]
     data_parsed = [make_conllu_dataset(f) for f in data_files]
     data_count = [sum(1 for _ in ds()) for ds in data_parsed]
     dataset_vocabs = [calculate_vocabs(dataset=ds()) for ds in data_parsed]
@@ -35,7 +35,8 @@ def main(_argv):
             sentences=sentences(),
             output_file=output_file,
             vocabmaps=vocabmaps,
-            total=total
+            total=total,
+            chunksize=tf.flags.FLAGS.chunksize
         )
 
 
@@ -44,4 +45,5 @@ if __name__ == '__main__':
     tf.flags.DEFINE_string('data_dir', '../../data/ptb/data/ptb', 'Data directory')
     tf.flags.DEFINE_string('output_dir', '../../data/ptb/processed', 'Data directory')
     tf.flags.DEFINE_float('min_count', 20, 'test_size')
+    tf.flags.DEFINE_integer('chunksize', 1000, 'test_size')
     tf.app.run()

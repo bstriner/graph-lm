@@ -5,7 +5,7 @@ from tensorflow.contrib import slim
 from tensorflow.contrib.gan.python.train import RunTrainOpsHook
 
 from graph_lm.models.networks.utils.dag_utils import build_dag
-from .networks.decoder_dag_supervised import vae_decoder_dag_supervised
+from .networks.decoder_dag_supervised import decoder_dag_supervised
 from .networks.discriminator_dag_supervised import discriminator_dag_supervised
 from .networks.encoder_dag_gan import encoder_dag_gan
 from ..anneal import get_kl_scale_logistic
@@ -66,7 +66,7 @@ def make_model_aae_dag_supervised(
                     weights_regularizer=weights_regularizer
                 )  # (N,L,D)
             with tf.variable_scope("decoder_scope") as decoder_scope:
-                decoded = vae_decoder_dag_supervised(
+                decoded = decoder_dag_supervised(
                     latent=encoded,
                     vocab_size=vocab_size,
                     dag=dag,
@@ -146,7 +146,7 @@ def make_model_aae_dag_supervised(
                 shape=tf.shape(encoded),
                 dtype=tf.float32
             )
-            decoded_gen = vae_decoder_dag_supervised(
+            decoded_gen = decoder_dag_supervised(
                 latent=encoded_prior,
                 vocab_size=vocab_size,
                 dag=dag,

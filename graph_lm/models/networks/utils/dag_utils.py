@@ -84,20 +84,22 @@ def build_dag(heads):
     return dag
 
 
-def make_message(inputs, params, fully_connected_fn=slim.fully_connected, hidden_depth=1):
+def make_message(inputs, dim, fully_connected_fn=slim.fully_connected, hidden_depth=2, weights_regularizer=None):
     h = inputs
     for i in range(hidden_depth):
         h = fully_connected_fn(
             inputs=h,
             activation_fn=tf.nn.leaky_relu,
-            num_outputs=params.decoder_dim,
-            scope='messages_{}'.format(i)
+            num_outputs=dim,
+            scope='messages_{}'.format(i),
+            weights_regularizer=weights_regularizer
         )
     messages = fully_connected_fn(
         inputs=h,
         activation_fn=tf.nn.leaky_relu,
-        num_outputs=params.decoder_dim,
-        scope='messages_2'
+        num_outputs=dim,
+        scope='messages_2',
+        weights_regularizer=weights_regularizer
     )
     return messages
 
@@ -115,12 +117,14 @@ def pass_messge(messages, dag_bw):
 
 
 def message_passing(
-        latent, dag_bw, params, fully_connected_fn=slim.fully_connected, hidden_depth=1
+        latent, dag_bw, params, dim, fully_connected_fn=slim.fully_connected, hidden_depth=2,
+
+        weights_regularizer=None
 ):
     """
 
     :param latent: (N, L, Dlatent)
-    :param dag_bw: (N, L, L)
+    :param dag_bw: (N, L to, L from)
     :param sequence_lengths: (N,)
     :return:
     """
@@ -129,7 +133,7 @@ def message_passing(
     l = tf.shape(latent)[1]
     messages_t = tf.zeros(
         dtype=tf.float32,
-        shape=(n, l, params.decoder_dim)
+        shape=(n, l, dim)
     )
     inputs_t = tf.concat([latent, messages_t], axis=-1)
     for t in range(params.message_depth):
@@ -137,9 +141,10 @@ def message_passing(
             # print("inputs_{}: {}".format(t, inputs_t))
             messages_t = make_message(
                 inputs_t,
-                params=params,
+                dim=dim,
                 fully_connected_fn=fully_connected_fn,
-                hidden_depth=hidden_depth)
+                hidden_depth=hidden_depth,
+                weights_regularizer=weights_regularizer)
             # print("messages1_{}: {}".format(t, messages_t))
             messages_t = pass_messge(messages_t, dag_bw=dag_bw)
             # print("messages2_{}: {}".format(t, messages_t))

@@ -97,9 +97,9 @@ def write_records_parsed_v2(
         vocabmaps: Dict[str, Dict[str, int]],
         int_fields=INT_FIELDS,
         text_fields=TEXT_FIELDS,
+        chunksize=1000,
         total=None):
-    os.makedirs(os.path.dirname(output_file), exist_ok=True)
-    with TFRecordWriter(output_file) as writer:
+    with ShardRecordWriter(path_fmt=output_file, chunksize=chunksize) as writer:
         for sentence in tqdm(sentences, desc="Writing Records", total=total):
             int_field_data = {
                 field: feature_int64_list([int(getattr(word, field)) for word in sentence])

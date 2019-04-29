@@ -4,36 +4,32 @@ import tensorflow as tf
 from tensorflow.contrib import slim
 from tensorflow.python.estimator.estimator_lib import EstimatorSpec
 
-from ...callbacks.ctc_callback import CTCHook
-from ...sparse import sparsify
+from ...callbacks.dag_callback import DAGHook
 
 
 def crossentropy_estimator(
-        tokens, token_lengths, logits, glogits,
-        sequence_mask, sequence_length_ctc, vocab, run_config, params, mode,
-        model_scope,
+        tokens, token_lengths, logits, glogits, vocab, run_config, params, mode,
+        model_scope, idx,
         training_hooks=[]):
+    n = tf.shape(tokens)[0]
+    L = tf.shape(tokens)[1]
+    # Loss calculation
 
-    with tf.name_scope(model_scope+"/"):
-        ctc_labels_sparse = sparsify(tf.cast(tokens, tf.int32), sequence_mask)
-        ctc_labels = tf.sparse_tensor_to_dense(ctc_labels_sparse, default_value=-1)
-        # ctc_labels = tf.sparse_transpose(ctc_labels, (1,0))
-        print("Labels: {}".format(ctc_labels))
-        # tf.tile(tf.pow([2], depth), (n,))
-        print("CTC: {}, {}, {}".format(ctc_labels, logits, sequence_length_ctc))
-        ctc_loss_raw = tf.nn.ctc_loss(
-            labels=ctc_labels_sparse,
-            sequence_length=sequence_length_ctc,
-            inputs=logits,
-            # sequence_length=tf.shape(logits)[0],
-            # ctc_merge_repeated=False,
-            # preprocess_collapse_repeated=False,
-            # ctc_merge_repeated=True,
-            # ignore_longer_outputs_than_inputs=False,
-            time_major=True
+    with tf.name_scope(model_scope + "/loss/"):
+        logits_values = tf.gather_nd(params=logits, indices=idx)
+        labels_values = tf.gather_nd(params=tokens, indices=idx)
+        onehot_labels_values = tf.one_hot(indices=labels_values, depth=vocab.shape[0])
+        loss_values = tf.losses.softmax_cross_entropy(
+            onehot_labels=onehot_labels_values,
+            logits=logits_values,
+            reduction=tf.losses.Reduction.NONE,
+            loss_collection=None
         )
-        ctc_loss = tf.reduce_mean(ctc_loss_raw, name='ctc_loss')
-        tf.losses.add_loss(ctc_loss)
+        loss_arr = tf.scatter_nd(updates=loss_values, indices=idx, shape=(n, L))
+        loss_n = tf.reduce_sum(loss_arr, axis=-1)
+        loss = tf.reduce_mean(loss_n)
+        tf.losses.add_loss(loss)
+        tf.summary.scalar("softmax_cross_entropy", loss)
 
     losses = tf.losses.get_losses(scope=model_scope)
     print("Estimator losses: {}".format(losses))
@@ -41,26 +37,26 @@ def crossentropy_estimator(
     total_loss = tf.add_n(losses)
     updates = tf.get_collection(key=tf.GraphKeys.UPDATE_OPS, scope=model_scope)
 
-    autoencode_hook = CTCHook(
+    # Hooks
+    autoencode_hook = DAGHook(
         logits=logits,
-        lengths=sequence_length_ctc,
+        true=tokens,
         vocab=vocab,
         path=os.path.join(run_config.model_dir, "autoencoded", "autoencoded-{:08d}.csv"),
-        true=ctc_labels,
-        name="Autoencoded"
+        name="Autoencoded",
+        idx=idx
     )
-    generate_hook = CTCHook(
+    generate_hook = DAGHook(
         logits=glogits,
-        lengths=sequence_length_ctc,
+        true=tokens,
         vocab=vocab,
         path=os.path.join(run_config.model_dir, "generated", "generated-{:08d}.csv"),
-        true=ctc_labels,
-        name="Generated"
+        name="Generated",
+        idx=idx
     )
     evaluation_hooks = [autoencode_hook, generate_hook]
 
-    tf.summary.scalar('ctc_loss', ctc_loss)
-    tf.summary.scalar('total_loss', total_loss)
+    # tf.summary.scalar('model_total_loss', total_loss)
 
     # Train
     optimizer = tf.train.AdamOptimizer(params.lr)
@@ -72,7 +68,7 @@ def crossentropy_estimator(
         variables_to_train=variables,
         update_ops=updates)
     eval_metric_ops = {
-        'ctc_loss_eval': tf.metrics.mean(ctc_loss_raw),
+        'cross_entropy_eval': tf.metrics.mean(loss_n),
         'token_lengths_eval': tf.metrics.mean(token_lengths)
     }
 
