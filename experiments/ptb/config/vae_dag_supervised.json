@@ -1,0 +1,17 @@
+{
+  "model": "vae_dag_supervised",
+  "kl_anneal_start": 10000,
+  "kl_anneal_end": 100000,
+  "kl_anneal_min": 1e-4,
+  "kl_anneal_max": 1.0,
+  "message_depth": 8,
+  "lr": 3e-5,
+  "batch_norm": false,
+  "encoder_dim": 256,
+  "encoder_layers": 2,
+  "decoder_dim": 256,
+  "decoder_layers": 2,
+  "latent_dim": 128,
+  "attention_dim": 128,
+  "l2": 1e-8
+}

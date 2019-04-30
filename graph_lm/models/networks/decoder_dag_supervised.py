@@ -5,25 +5,23 @@ from graph_lm.models.networks.utils.dag_utils import message_passing
 from ...stats import get_bias
 
 
-def decoder_dag_supervised(latent, dag, dag_bw, sequence_length, vocab_size, params, weights_regularizer=None,
+def decoder_dag_supervised(latent, dag, dag_bw,dag_feats, sequence_length, vocab_size, params, weights_regularizer=None,
                            is_training=True):
     # latent (N, L, D)
     N = tf.shape(latent)[0]
     L = tf.shape(latent)[1]
     with tf.variable_scope('decoder'):
-        h_linspace = tf.linspace(start=0., stop=tf.cast(L, tf.float32), num=L)
-        h_linspace = tf.tile(tf.expand_dims(h_linspace, 0), [N, 1])
-        h_linspace = h_linspace / tf.cast(tf.expand_dims(sequence_length, axis=1), tf.float32)
-        h = tf.concat([latent, tf.expand_dims(h_linspace, -1)], axis=-1)
+        #h = tf.concat([latent, tf.expand_dims(h_linspace, -1)], axis=-1)
         with tf.variable_scope("upward"):
             h = message_passing(
-                latent=h,
+                latent=dag_feats,
                 dag_bw=dag_bw,
                 params=params,
                 dim=params.decoder_dim,
                 hidden_depth=params.decoder_layers,
                 weights_regularizer=weights_regularizer
             )
+        h = tf.concat([h, latent], axis=-1)
         with tf.variable_scope("downward"):
             h = message_passing(
                 latent=h,
@@ -48,8 +46,8 @@ def decoder_dag_supervised(latent, dag, dag_bw, sequence_length, vocab_size, par
                 activation_fn=None,
                 scope='decoder_output_logits',
                 weights_regularizer=weights_regularizer,
-                biases_initializer=tf.initializers.constant(
-                    value=get_bias(smoothing=params.bias_smoothing),
-                    verify_shape=True)
+                #biases_initializer=tf.initializers.constant(
+                #    value=get_bias(smoothing=params.bias_smoothing),
+                #    verify_shape=True)
             )  # (N,L,V)
         return logits

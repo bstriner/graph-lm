@@ -34,7 +34,7 @@ if __name__ == '__main__':
     tf.flags.DEFINE_string('data_version', 'v1', 'data_version')
     # tf.flags.DEFINE_string('model_dir', '../../output/ptb/aae/binary_tree/flat/v4-bn', 'Data directory')
     # tf.flags.DEFINE_string('model_dir', '../../output/ptb/aae/binary_tree/attn/v5', 'Data directory')
-    tf.flags.DEFINE_string('model_dir', '../../output/ptb/aae/dag_supervised/v3', 'Data directory')
+    tf.flags.DEFINE_string('model_dir', '../../output/ptb/aae/dag_supervised/v12-lemma', 'Data directory')
     tf.flags.DEFINE_string('config', 'config/aae_dag_supervised.json', 'Data directory')
     # tf.flags.DEFINE_string('config', 'config/aae_binary_tree_attn.json', 'Data directory')
     # tf.flags.DEFINE_string('config', 'config/aae_binary_tree_flat.json', 'Data directory')

@@ -4,16 +4,11 @@ from graph_lm.models.networks.utils.dag_utils import message_passing
 from ...sn import sn_fully_connected, sn_kernel
 
 def discriminator_dag_supervised(
-        latent, dag, dag_bw,sequence_length, params, idx, weights_regularizer=None,
+        latent, dag, dag_bw, dag_feats, sequence_length, params, idx, weights_regularizer=None,
         is_training=True):
     # latent (N, L, D)
-    N = tf.shape(latent)[0]
-    L = tf.shape(latent)[1]
     with tf.variable_scope('discriminator'):
-        h_linspace = tf.linspace(start=0., stop=tf.cast(L, tf.float32), num=L)
-        h_linspace = tf.tile(tf.expand_dims(h_linspace, 0), [N, 1])
-        h_linspace = h_linspace / tf.cast(tf.expand_dims(sequence_length, axis=1), tf.float32)
-        h = tf.concat([latent, tf.expand_dims(h_linspace, -1)], axis=-1)
+        h = tf.concat([latent, dag_feats], axis=-1)
         with tf.variable_scope("upward"):
             h = message_passing(
                 latent=h,

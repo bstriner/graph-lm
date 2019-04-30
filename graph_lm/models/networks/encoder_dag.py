@@ -4,9 +4,7 @@ from tensorflow.contrib import slim
 from graph_lm.models.networks.utils.dag_utils import message_passing
 
 
-def encoder_dag(dag, dag_bw, sequence_length, text, vocab_size, params, weights_regularizer=None):
-    L = tf.shape(text)[1]
-    N = tf.shape(text)[0]
+def encoder_dag(dag, dag_bw, dag_feats, text, vocab_size, params, weights_regularizer=None):
     with tf.variable_scope("encoder"):
         text_embeddings = tf.get_variable(
             dtype=tf.float32,
@@ -15,10 +13,7 @@ def encoder_dag(dag, dag_bw, sequence_length, text, vocab_size, params, weights_
             initializer=tf.initializers.truncated_normal(
                 stddev=1. / tf.sqrt(tf.constant(params.encoder_dim, dtype=tf.float32))))
         h_text = tf.nn.embedding_lookup(params=text_embeddings, ids=text)  # (N, L, D)
-        h_linspace = tf.linspace(start=0., stop=tf.cast(L, tf.float32), num=L)
-        h_linspace = tf.tile(tf.expand_dims(h_linspace, 0), [N, 1])
-        h_linspace = h_linspace / tf.cast(tf.expand_dims(sequence_length, axis=1), tf.float32)
-        h = tf.concat([h_text, tf.expand_dims(h_linspace, -1)], axis=-1)
+        h = tf.concat([h_text, dag_feats], axis=-1)
         with tf.variable_scope("upward"):
             h = message_passing(
                 latent=h,
