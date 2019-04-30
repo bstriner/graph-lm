@@ -51,6 +51,7 @@ def default_params():
         noise_dim=256,
 
         batch_norm=False,
+        infix_tree=False,
 
         bias_smoothing=0.05,
 

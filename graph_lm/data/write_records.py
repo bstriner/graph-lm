@@ -98,31 +98,35 @@ def write_records_parsed_v2(
         int_fields=INT_FIELDS,
         text_fields=TEXT_FIELDS,
         chunksize=1000,
+max_length=None,
         total=None):
+    count = 0
     with ShardRecordWriter(path_fmt=output_file, chunksize=chunksize) as writer:
         for sentence in tqdm(sentences, desc="Writing Records", total=total):
-            int_field_data = {
-                field: feature_int64_list([int(getattr(word, field)) for word in sentence])
-                for field in int_fields}
-            text_field_data = {
-                field: feature_int64_list(encode_words(
-                    words=[getattr(word, field) for word in sentence],
-                    wordmap=vocabmaps[field]))
-                for field in text_fields}
+            if max_length is None or len(sentence) <= max_length:
+                count += 1
+                int_field_data = {
+                    field: feature_int64_list([int(getattr(word, field)) for word in sentence])
+                    for field in int_fields}
+                text_field_data = {
+                    field: feature_int64_list(encode_words(
+                        words=[getattr(word, field) for word in sentence],
+                        wordmap=vocabmaps[field]))
+                    for field in text_fields}
 
-            sentence_length = feature_int64([len(sentence)])
-            sequence_features = dict()
-            sequence_features.update(int_field_data)
-            sequence_features.update(text_field_data)
-            context_features = {
-                SENTENCE_LENGTH: sentence_length
-            }
-            example = tf.train.SequenceExample(
-                context=Features(feature=context_features),
-                feature_lists=tf.train.FeatureLists(feature_list=sequence_features),
-            )
-            writer.write(example.SerializeToString())
-
+                sentence_length = feature_int64([len(sentence)])
+                sequence_features = dict()
+                sequence_features.update(int_field_data)
+                sequence_features.update(text_field_data)
+                context_features = {
+                    SENTENCE_LENGTH: sentence_length
+                }
+                example = tf.train.SequenceExample(
+                    context=Features(feature=context_features),
+                    feature_lists=tf.train.FeatureLists(feature_list=sequence_features),
+                )
+                writer.write(example.SerializeToString())
+    print("Wrote [{}] records out of [{}]".format(count, total))
 
 def write_records_raw(sentences, output_file, charmap, chunksize=1000, total=None):
     with ShardRecordWriter(path_fmt=output_file, chunksize=chunksize) as writer:

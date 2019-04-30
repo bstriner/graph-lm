@@ -31,8 +31,10 @@ def make_model_binary_tree_attn(
         sequence_mask = tf.sequence_mask(maxlen=tf.shape(tokens)[1], lengths=token_lengths)
         n = tf.shape(tokens)[0]
         depth = params.tree_depth
-        const_sequence_length = int(math.pow(2, depth + 1) - 1)
-
+        if params.infix_tree:
+            const_sequence_length = int(math.pow(2, depth + 1) - 1)
+        else:
+            const_sequence_length = int(math.pow(2, depth))
         # Assertions
         with tf.control_dependencies([
             tf.assert_greater_equal(

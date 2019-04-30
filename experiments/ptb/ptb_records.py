@@ -4,8 +4,8 @@ import tensorflow as tf
 
 from graph_lm.data.calculate_vocab import calcuate_vocabmaps, calculate_vocablists, calculate_vocabs, combine_vocabs, \
     write_vocablists
-from graph_lm.data.conllu import CONLLU_FORMAT, make_conllu_dataset
-from graph_lm.data.inputs import RECORDS, SPLITS, RECORD_FMT
+from graph_lm.data.conllu import make_conllu_dataset
+from graph_lm.data.inputs import RECORD_FMT, SPLITS
 from graph_lm.data.write_records import write_records_parsed_v2
 
 PTB_FILES = [
@@ -36,7 +36,8 @@ def main(_argv):
             output_file=output_file,
             vocabmaps=vocabmaps,
             total=total,
-            chunksize=tf.flags.FLAGS.chunksize
+            chunksize=tf.flags.FLAGS.chunksize,
+            max_length=tf.flags.FLAGS.max_length
         )
 
 
@@ -44,6 +45,7 @@ if __name__ == '__main__':
     tf.logging.set_verbosity(tf.logging.INFO)
     tf.flags.DEFINE_string('data_dir', '../../data/ptb/data/ptb', 'Data directory')
     tf.flags.DEFINE_string('output_dir', '../../data/ptb/processed', 'Data directory')
-    tf.flags.DEFINE_float('min_count', 20, 'test_size')
+    tf.flags.DEFINE_float('min_count', 0, 'test_size')
+    tf.flags.DEFINE_float('max_length', 100, 'test_size')
     tf.flags.DEFINE_integer('chunksize', 1000, 'test_size')
     tf.app.run()

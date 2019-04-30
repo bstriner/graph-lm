@@ -18,7 +18,7 @@ def make_model_dag_supervised(
         vocabs,
         model_mode='vae'
 ):
-    vocab = vocabs['lemma']
+    vocab = vocabs[TEXT]
     vocab_size = vocab.shape[0]
     print("Vocab size: {}".format(vocab_size))
 
@@ -27,7 +27,7 @@ def make_model_dag_supervised(
         print("Features: {}".format(features))
         # Inputs
         sequence_length = features[SENTENCE_LENGTH]
-        text = features['lemma']
+        text = features[TEXT]
         # tags = features['tags']
         heads = features['head']  # (N,L)
         sequence_mask = tf.sequence_mask(maxlen=tf.shape(text)[1], lengths=sequence_length)  # (N,L)

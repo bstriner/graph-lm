@@ -8,7 +8,6 @@ from tensorflow.python.estimator.training import train_and_evaluate
 from .data.calculate_vocab import read_vocablists
 from .data.inputs import make_input_fns
 from .default_params import get_hparams
-from .models.model_aae_dag_supervised import make_model_aae_dag_supervised
 from .models.model_binary_tree_attn import make_model_binary_tree_attn
 from .models.model_binary_tree_flat import make_model_binary_tree_flat
 from .models.model_dag_supervised import make_model_dag_supervised

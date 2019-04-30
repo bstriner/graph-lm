@@ -27,10 +27,10 @@ def calc_ctc_output(x, vocab_size, params, weights_regularizer=None, reuse=False
             num_outputs=vocab_size + 1,
             activation_fn=None,
             scope='output_mlp_3',
-            weights_regularizer=weights_regularizer,
-            biases_initializer=tf.initializers.constant(get_bias_ctc(
-                average_output_length=math.pow(2, params.tree_depth + 1) - 1,
-                smoothing=0.05
-            ))
+            weights_regularizer=weights_regularizer
+            #biases_initializer=tf.initializers.constant(get_bias_ctc(
+            #    average_output_length=math.pow(2, params.tree_depth + 1) - 1,
+            #    smoothing=0.05
+            #))
         )
     return h

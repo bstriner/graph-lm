@@ -1,6 +1,8 @@
+import tensorflow as tf
+
 from .ctc_output import calc_ctc_output
-from .utils.bintree_utils import concat_layers, infix_indices, stack_tree_v2
-from .utils.bintree_utils_v2 import binary_tree_downward_v2, binary_tree_upward_v2
+from .utils.bintree_utils import concat_layers, stack_tree_v2
+from .utils.bintree_utils_v2 import binary_tree_downward_v2
 
 
 def decoder_bintree_attention(latent_layers, vocab_size, params, weights_regularizer=None, is_training=True):
@@ -21,7 +23,10 @@ def decoder_bintree_attention(latent_layers, vocab_size, params, weights_regular
         hidden_dim=params.decoder_dim
     )
     hs = concat_layers(hs, messages_down)
-    flat_layers = stack_tree_v2(hs)  # (L,N,V)
+    if params.infix_tree:
+        flat_layers = stack_tree_v2(hs)  # (L,N,V)
+    else:
+        flat_layers = tf.transpose(hs[-1], (1, 0, 2))
     logits = calc_ctc_output(
         flat_layers,
         vocab_size=vocab_size,
