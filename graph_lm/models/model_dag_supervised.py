@@ -112,8 +112,8 @@ def make_model_dag_supervised(
                     dag=dag,
                     dag_bw=dag_bw,
                     dag_feats=dag_feats,
-                    sequence_length=sequence_length,
                     params=params,
+                    sequence_length=sequence_length,
                     weights_regularizer=weights_regularizer,
                     is_training=is_training
                 )
@@ -124,9 +124,9 @@ def make_model_dag_supervised(
                     dag=dag,
                     dag_bw=dag_bw,
                     dag_feats=dag_feats,
-                    sequence_length=sequence_length,
                     params=params,
                     weights_regularizer=weights_regularizer,
+                    sequence_length=sequence_length,
                     is_training=is_training
                 )
         if model_mode == 'aae':

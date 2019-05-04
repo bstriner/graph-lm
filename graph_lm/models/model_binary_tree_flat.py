@@ -7,7 +7,7 @@ from .estimators.aae import sample_aae
 from .estimators.ctc_estimator import ctc_estimator
 from .estimators.gan_losses import build_gan_losses
 from .estimators.gan_train import dis_train_hook
-from .model_vae_ctc_flat import encoder_flat
+from .model_ctc_flat import encoder_flat
 from .networks.decoder_binary_tree import decoder_binary_tree
 from .networks.discriminator_output import discriminator_output
 from .networks.utils.bintree_utils import concat_layers
@@ -16,14 +16,14 @@ from ..data.word import SENTENCE_LENGTH
 
 def make_model_binary_tree_flat(
         run_config,
-        vocabs,
-        model_mode
+        vocabs
 ):
     vocab = vocabs['text']
     vocab_size = vocab.shape[0]
     print("Vocab size: {}".format(vocab_size))
 
     def model_fn(features, labels, mode, params):
+        model_mode = params.model_mode
         is_training = mode == tf.estimator.ModeKeys.TRAIN
         # Inputs
         tokens = features['text']  # (N, L)

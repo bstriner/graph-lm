@@ -38,7 +38,8 @@ def get_hparams(model_dir, validate=True):
 def default_params():
     return HParams(
         model='ctasdsac',
-        gan_loss='v1',
+        model_mode="vae",
+        gan_loss='v4',
 
         encoder_dim=256,
         encoder_layers=3,
@@ -52,7 +53,8 @@ def default_params():
 
         batch_norm=False,
         infix_tree=False,
-
+        lstm_output=False,
+        lstm_output_discriminator=False,
         bias_smoothing=0.05,
 
         tree_depth=8,

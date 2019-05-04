@@ -1,0 +1,22 @@
+{
+  "model": "ctc_flat",
+  "model_mode": "aae",
+  "gan_loss": "v4",
+  "penalty_anneal_start": 5000,
+  "penalty_anneal_end": 100000,
+  "penalty_anneal_min": 10.0,
+  "penalty_anneal_max": 100.0,
+  "flat_length": 64,
+  "lr": 3e-5,
+  "dis_lr": 3e-5,
+  "discriminator_steps": 5,
+  "batch_norm": false,
+  "encoder_dim": 512,
+  "encoder_layers": 3,
+  "decoder_dim": 512,
+  "decoder_layers": 3,
+  "discriminator_dim": 512,
+  "discriminator_layers": 4,
+  "latent_dim": 512,
+  "l2": 1e-8
+}

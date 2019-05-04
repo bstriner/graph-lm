@@ -22,6 +22,6 @@ def discriminator_output(x, params, weights_regularizer=None, reuse=False, is_tr
             inputs=h,
             num_outputs=1,
             activation_fn=None,
-            scope='output_mlp_3',
+            scope='discriminator_logits',
             weights_regularizer=weights_regularizer)
     return h

@@ -12,7 +12,6 @@ def calc_kl_loss_raw(mu, logsigma, params, n):
         mu = tf.squeeze(mu, 1)
         logsigma = tf.squeeze(logsigma, 1)
         one_fix=True
-        print("Fixing ones issue")
     latent_dist = tfd.MultivariateNormalDiag(
         loc=mu,
         scale_diag=tf.nn.softplus(logsigma),

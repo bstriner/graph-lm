@@ -53,25 +53,29 @@ def ctc_estimator(
     total_loss = tf.add_n(losses)
     updates = tf.get_collection(key=tf.GraphKeys.UPDATE_OPS, scope=model_scope)
 
-    autoencode_hook = CTCHook(
-        logits=logits,
-        lengths=sequence_length_ctc,
-        vocab=vocab,
-        path=os.path.join(run_config.model_dir, "autoencoded", "autoencoded-{:08d}.csv"),
-        true=ctc_labels,
-        name="Autoencoded",
-        merge_repeated=True
-    )
-    generate_hook = CTCHook(
-        logits=glogits,
-        lengths=sequence_length_ctc,
-        vocab=vocab,
-        path=os.path.join(run_config.model_dir, "generated", "generated-{:08d}.csv"),
-        true=ctc_labels,
-        name="Generated",
-        merge_repeated=True
-    )
-    evaluation_hooks = [autoencode_hook, generate_hook]
+    evaluation_hooks = []
+    if logits is not None:
+        autoencode_hook = CTCHook(
+            logits=logits,
+            lengths=sequence_length_ctc,
+            vocab=vocab,
+            path=os.path.join(run_config.model_dir, "autoencoded", "autoencoded-{:08d}.csv"),
+            true=ctc_labels,
+            name="Autoencoded",
+            merge_repeated=True
+        )
+        evaluation_hooks.append(autoencode_hook)
+    if glogits is not None:
+        generate_hook = CTCHook(
+            logits=glogits,
+            lengths=sequence_length_ctc,
+            vocab=vocab,
+            path=os.path.join(run_config.model_dir, "generated", "generated-{:08d}.csv"),
+            true=ctc_labels,
+            name="Generated",
+            merge_repeated=True
+        )
+        evaluation_hooks.append(generate_hook)
 
     tf.summary.scalar('ctc_loss', ctc_loss)
     tf.summary.scalar('total_loss', total_loss)

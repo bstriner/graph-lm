@@ -30,6 +30,7 @@ def main(_argv):
         vocablists=vocablists,
         path=tf.flags.FLAGS.output_dir
     )
+    print("Vocab size: {}".format(len(vocablists['text'])))
     for output_file, sentences, total in zip(output_files, data_parsed, data_count):
         write_records_parsed_v2(
             sentences=sentences(),
@@ -44,8 +45,8 @@ def main(_argv):
 if __name__ == '__main__':
     tf.logging.set_verbosity(tf.logging.INFO)
     tf.flags.DEFINE_string('data_dir', '../../data/ptb/data/ptb', 'Data directory')
-    tf.flags.DEFINE_string('output_dir', '../../data/ptb/processed', 'Data directory')
-    tf.flags.DEFINE_float('min_count', 0, 'test_size')
-    tf.flags.DEFINE_float('max_length', 100, 'test_size')
-    tf.flags.DEFINE_integer('chunksize', 1000, 'test_size')
+    tf.flags.DEFINE_string('output_dir', '../../data/ptb/processed-small', 'Data directory')
+    tf.flags.DEFINE_float('min_count', 20, 'min_count')
+    tf.flags.DEFINE_float('max_length', 32, 'max_length')
+    tf.flags.DEFINE_integer('chunksize', 1000, 'chunksize')
     tf.app.run()

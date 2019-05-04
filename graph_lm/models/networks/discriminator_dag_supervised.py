@@ -3,6 +3,7 @@ import tensorflow as tf
 from graph_lm.models.networks.utils.dag_utils import message_passing
 from ...sn import sn_fully_connected, sn_kernel
 
+from .utils.rnn_util import lstm
 def discriminator_dag_supervised(
         latent, dag, dag_bw, dag_feats, sequence_length, params, idx, weights_regularizer=None,
         is_training=True):
@@ -30,19 +31,28 @@ def discriminator_dag_supervised(
                 dim=params.discriminator_dim
             )
         with tf.variable_scope('output_mlp'):
-            for i in range(params.discriminator_layers):
-                h = sn_fully_connected(
-                    inputs=h,
-                    activation_fn=tf.nn.leaky_relu,
-                    weights_regularizer=weights_regularizer,
-                    num_outputs=params.discriminator_dim,
-                    scope='discriminator_output_{}'.format(i)
+            if params.lstm_output_discriminator:
+                h, _ = lstm(
+                    x=h,
+                    num_units=params.decoder_dim,
+                    bidirectional=True,
+                    num_layers=params.decoder_layers,
+                    sequence_lengths=sequence_length
                 )
+            else:
+                for i in range(params.discriminator_layers):
+                    h = sn_fully_connected(
+                        inputs=h,
+                        activation_fn=tf.nn.leaky_relu,
+                        weights_regularizer=weights_regularizer,
+                        num_outputs=params.discriminator_dim,
+                        scope='discriminator_output_{}'.format(i)
+                    )
             logits = sn_fully_connected(
                 inputs=h,
                 num_outputs=1,
                 activation_fn=None,
-                scope='output_2',
+                scope='discriminator_logits',
                 weights_regularizer=weights_regularizer
             )  # (N,L,1)
             logits = tf.squeeze(logits, axis=-1)  # (N, L)

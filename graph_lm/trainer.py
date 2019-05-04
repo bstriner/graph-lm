@@ -11,29 +11,23 @@ from .default_params import get_hparams
 from .models.model_binary_tree_attn import make_model_binary_tree_attn
 from .models.model_binary_tree_flat import make_model_binary_tree_flat
 from .models.model_dag_supervised import make_model_dag_supervised
-from .models.model_vae_ctc_flat import make_model_vae_ctc_flat
+from .models.model_ctc_flat import make_model_ctc_flat
 from .models.model_vae_ctc_flat_attn import make_model_vae_ctc_flat_attn
 from .models.model_vae_dag import make_model_dag_unsupervised
 
 
 def make_model_fn(hparams, run_config, vocabs):
-    if hparams.model == 'vae_binary_tree_flat':
-        return make_model_binary_tree_flat(run_config, vocabs, model_mode='vae')
-    elif hparams.model == 'aae_binary_tree_flat':
-        return make_model_binary_tree_flat(run_config, vocabs, model_mode='aae')
-    elif hparams.model == 'vae_binary_tree_attn':
-        return make_model_binary_tree_attn(run_config, vocabs, model_mode='vae')
-    elif hparams.model == 'aae_binary_tree_attn':
-        return make_model_binary_tree_attn(run_config, vocabs, model_mode='aae')
-    elif hparams.model == 'vae_dag_supervised':
-        return make_model_dag_supervised(run_config, vocabs, model_mode='vae')
-    elif hparams.model == 'aae_dag_supervised':
-        return make_model_dag_supervised(run_config, vocabs, model_mode='aae')
-    elif hparams.model == 'vae_ctc_flat':
-        return make_model_vae_ctc_flat(run_config, vocabs)
-    elif hparams.model == 'vae_ctc_flat_attn':
+    if hparams.model == 'binary_tree_flat':
+        return make_model_binary_tree_flat(run_config, vocabs)
+    elif hparams.model == 'binary_tree_attn':
+        return make_model_binary_tree_attn(run_config, vocabs)
+    elif hparams.model == 'dag_supervised':
+        return make_model_dag_supervised(run_config, vocabs)
+    elif hparams.model == 'ctc_flat':
+        return make_model_ctc_flat(run_config, vocabs)
+    elif hparams.model == 'ctc_flat_attn':
         return make_model_vae_ctc_flat_attn(run_config, vocabs)
-    elif hparams.model == 'vae_dag':
+    elif hparams.model == 'dag_unsupervised':
         return make_model_dag_unsupervised(run_config, vocabs)
     else:
         raise ValueError("Unknown model: {}".format(hparams.model))
