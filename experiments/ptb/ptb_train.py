@@ -4,6 +4,7 @@ Train on PTB
 ssh -L 6006:localhost:6006 ben@unity
 docker run -d -v /mnt/data/projects/graph-lm/output/ptb:/tb -p 6006:6006 tensorflow/tensorflow tensorboard --logdir /tb
 docker run -d -v /mnt/data/projects/graph-lm/output/ptb/aae:/tb -p 6006:6006 tensorflow/tensorflow tensorboard --logdir /tb
+docker run -d -v /mnt/data/projects/graph-lm/output/ptb/aae/ctc_flat:/tb -p 6006:6006 tensorflow/tensorflow tensorboard --logdir /tb
 """
 
 import sys
@@ -36,7 +37,7 @@ if __name__ == '__main__':
     # tf.flags.DEFINE_string('model_dir', '../../output/ptb/aae/binary_tree/flat/v4-bn', 'Data directory')
     #tf.flags.DEFINE_string('model_dir', '../../output/ptb/aae/binary_tree/attn/v10', 'Data directory')
     #tf.flags.DEFINE_string('model_dir', '../../output/ptb/aae/dag_supervised/v14', 'Data directory')
-    tf.flags.DEFINE_string('model_dir', '../../output/ptb/aae/ctc_flat/v7', 'Data directory')
+    tf.flags.DEFINE_string('model_dir', '../../output/ptb/aae/ctc_flat/v10', 'Data directory')
     #tf.flags.DEFINE_string('config', 'config/aae_binary_tree_attn_leaves.json', 'Data directory')
     #tf.flags.DEFINE_string('config', 'config/aae_dag_supervised.json', 'Data directory')
     tf.flags.DEFINE_string('config', 'config/aae_ctc_flat.json', 'Data directory')

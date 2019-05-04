@@ -83,7 +83,7 @@ def make_model_ctc_flat(
 
         if params.model_mode == ModelModes.AAE_RE or params.model_mode == ModelModes.AAE_STOCH:
             with tf.variable_scope('discriminator') as discriminator_scope:
-                dis_inputs = tf.concat([latent_sample, latent_prior_sample], axis=0)
+                dis_inputs = tf.concat([latent_prior_sample, latent_sample], axis=0)
                 dis_out = discriminator_output(
                     x=dis_inputs, params=params,
                     weights_regularizer=weights_regularizer,

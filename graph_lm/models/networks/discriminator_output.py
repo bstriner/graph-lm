@@ -1,9 +1,7 @@
-import math
 import tensorflow as tf
-from tensorflow.contrib import slim
 
-from ...stats import get_bias_ctc
 from ...sn import sn_fully_connected
+
 
 def discriminator_output(x, params, weights_regularizer=None, reuse=False, is_training=True):
     # X: (N,*, D)
