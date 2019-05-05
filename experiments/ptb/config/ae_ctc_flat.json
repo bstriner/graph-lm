@@ -1,14 +1,14 @@
 {
   "model": "ctc_flat",
   "model_mode": "ae",
-  "gan_loss": "v4",
   "flat_length": 64,
-  "lr": 3e-5,
-  "batch_norm": false,
-  "encoder_dim": 512,
+  "lr": 3e-4,
+  "batch_norm": true,
+  "encoder_dim": 256,
   "encoder_layers": 4,
-  "decoder_dim": 512,
+  "decoder_dim": 256,
   "decoder_layers": 4,
   "latent_dim": 512,
-  "l2": 1e-8
+  "l2": 1e-8,
+  "clip_gradient_value": 1e-2
 }

@@ -1,10 +1,12 @@
 import os
 
 import tensorflow as tf
-from tensorflow.contrib import slim
+# from tensorflow.contrib.slim.python.slim.learning import create_train_op
+from tensorflow.contrib.training.python.training.training import create_train_op
 from tensorflow.python.estimator.estimator_lib import EstimatorSpec
 from tensorflow.python.ops.ctc_ops import ctc_loss_dense
 
+from .transform_grads import make_transform_grads_fn
 from ...callbacks.ctc_callback import CTCHook
 from ...sparse import sparsify
 
@@ -83,12 +85,17 @@ def ctc_estimator(
     # Train
     optimizer = tf.train.AdamOptimizer(params.lr)
     variables = tf.trainable_variables(scope=model_scope)
-    train_op = slim.learning.create_train_op(
-        total_loss,
-        optimizer,
-        clip_gradient_norm=params.clip_gradient_norm,
+    transform_grads_fn = make_transform_grads_fn(params=params)
+
+    train_op = create_train_op(
+        total_loss=total_loss,
+        optimizer=optimizer,
+        update_ops=updates,
         variables_to_train=variables,
-        update_ops=updates)
+        transform_grads_fn=transform_grads_fn,
+        summarize_gradients=False,
+        aggregation_method=None,
+        check_numerics=True)
     eval_metric_ops = {
         'ctc_loss_eval': tf.metrics.mean(ctc_loss_raw),
         'token_lengths_eval': tf.metrics.mean(token_lengths)

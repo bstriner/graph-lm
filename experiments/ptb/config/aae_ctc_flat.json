@@ -18,5 +18,6 @@
   "discriminator_dim": 1024,
   "discriminator_layers": 4,
   "latent_dim": 512,
-  "l2": 1e-8
+  "l2": 1e-8,
+  "clip_gradient_value": 1e-2
 }
