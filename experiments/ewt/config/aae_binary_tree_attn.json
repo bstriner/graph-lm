@@ -1,0 +1,20 @@
+{
+  "model": "aae_binary_tree_attn",
+  "gan_loss": "v4",
+  "penalty_anneal_start": 5000,
+  "penalty_anneal_end": 100000,
+  "penalty_anneal_min": 10.0,
+  "penalty_anneal_max": 100.0,
+  "tree_depth": 7,
+  "lr": 3e-5,
+  "dis_lr": 3e-5,
+  "infix_tree": true,
+  "discriminator_steps": 5,
+  "batch_norm": false,
+  "encoder_dim": 256,
+  "decoder_dim": 256,
+  "discriminator_dim": 300,
+  "latent_dim": 64,
+  "attention_dim": 128,
+  "l2": 1e-7
+}

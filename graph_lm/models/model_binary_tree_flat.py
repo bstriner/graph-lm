@@ -10,9 +10,17 @@ from .estimators.gan_train import dis_train_hook
 from .model_ctc_flat import encoder_flat
 from .networks.decoder_binary_tree import decoder_binary_tree
 from .networks.discriminator_output import discriminator_output
-from .networks.utils.bintree_utils import concat_layers
 from ..data.word import SENTENCE_LENGTH
 
+from .estimators.ctc_estimator import ctc_estimator
+from .estimators.gan_losses import build_gan_losses
+from .estimators.gan_train import dis_train_hook
+from .estimators.sampling import sampling_flat
+from .model_modes import ModelModes
+from .networks.decoder_flat import decoder_flat
+from .networks.discriminator_output import discriminator_output
+from .networks.encoder_flat import encoder_flat
+from ..data.word import SENTENCE_LENGTH, TEXT
 
 def make_model_binary_tree_flat(
         run_config,
@@ -35,7 +43,7 @@ def make_model_binary_tree_flat(
 
         with tf.control_dependencies([
             tf.assert_greater_equal(
-                tf.cast(tf.pow(2, depth + 1) - 1, dtype=token_lengths.dtype),
+                tf.cast(const_sequence_length, dtype=token_lengths.dtype),
                 token_lengths,
                 message="Tokens longer than tree size"),
             tf.assert_less_equal(
@@ -66,21 +74,14 @@ def make_model_binary_tree_flat(
                 is_training=is_training
             )
             # Sampling
-            if model_mode == 'vae':
-                latent_sample, latent_prior_sample = kl(
-                    mu=mu,
-                    logsigma=logsigma,
-                    params=params,
-                    n=n)  # [(N,1,D), (N,2,D),(N,4,D),...]
-            elif model_mode == 'aae':
-                latent_sample, latent_prior_sample = sample_aae(
-                    mu=mu,
-                    logsigma=logsigma)  # [(N,1,D), (N,2,D),(N,4,D),...]
-            else:
-                raise ValueError("unknown model_mode")
+            latent_sample, latent_prior_sample = sampling_flat(
+                mu=mu,
+                logsigma=logsigma,
+                params=params,
+                n=n)
 
             # Decoder
-            with tf.variable_scope('vae_decoder') as decoder_scope:
+            with tf.variable_scope('decoder') as decoder_scope:
                 logits = decoder_binary_tree(
                     latent=latent_sample,
                     vocab_size=vocab_size,
@@ -94,7 +95,7 @@ def make_model_binary_tree_flat(
                     params=params,
                     weights_regularizer=weights_regularizer,
                     is_training=is_training)  # (L,N,D)
-        if model_mode == 'aae':
+        if params.model_mode== ModelModes.AAE_RE or params.model_mode == ModelModes.AAE_STOCH:
             with tf.variable_scope("discriminator", reuse=False) as discriminator_scope:
                 dis_inputs = tf.concat([latent_prior_sample, latent_sample], axis=0)
                 dis_out = discriminator_output(
@@ -116,7 +117,9 @@ def make_model_binary_tree_flat(
                 params=params
             )
             training_hooks = [discriminator_hook]
-        elif model_mode == 'vae':
+        elif model_mode == ModelModes.VAE:
+            training_hooks = []
+        elif model_mode == ModelModes.AE:
             training_hooks = []
         else:
             raise ValueError()
