@@ -1,26 +1,18 @@
 import math
+
 import tensorflow as tf
 from tensorflow.contrib import slim
-
-from graph_lm.models.estimators.kl import kl
-from .estimators.aae import sample_aae
-from .estimators.ctc_estimator import ctc_estimator
-from .estimators.gan_losses import build_gan_losses
-from .estimators.gan_train import dis_train_hook
-from .model_ctc_flat import encoder_flat
-from .networks.decoder_binary_tree import decoder_binary_tree
-from .networks.discriminator_output import discriminator_output
-from ..data.word import SENTENCE_LENGTH
 
 from .estimators.ctc_estimator import ctc_estimator
 from .estimators.gan_losses import build_gan_losses
 from .estimators.gan_train import dis_train_hook
 from .estimators.sampling import sampling_flat
 from .model_modes import ModelModes
-from .networks.decoder_flat import decoder_flat
+from .networks.decoder_binary_tree import decoder_binary_tree
 from .networks.discriminator_output import discriminator_output
 from .networks.encoder_flat import encoder_flat
-from ..data.word import SENTENCE_LENGTH, TEXT
+from ..data.word import SENTENCE_LENGTH
+
 
 def make_model_binary_tree_flat(
         run_config,
@@ -95,15 +87,18 @@ def make_model_binary_tree_flat(
                     embeddings=embeddings,
                     weights_regularizer=weights_regularizer,
                     is_training=is_training)  # (L,N,D)
-            with tf.variable_scope(decoder_scope, reuse=True):
-                glogits = decoder_binary_tree(
-                    latent=latent_prior_sample,
-                    vocab_size=vocab_size,
-                    params=params,
-                    embeddings=embeddings,
-                    weights_regularizer=weights_regularizer,
-                    is_training=is_training)  # (L,N,D)
-        if params.model_mode== ModelModes.AAE_RE or params.model_mode == ModelModes.AAE_STOCH:
+            if params.model_mode == ModelModes.AE:
+                glogits = None
+            else:
+                with tf.variable_scope(decoder_scope, reuse=True):
+                    glogits = decoder_binary_tree(
+                        latent=latent_prior_sample,
+                        vocab_size=vocab_size,
+                        params=params,
+                        embeddings=embeddings,
+                        weights_regularizer=weights_regularizer,
+                        is_training=is_training)  # (L,N,D)
+        if params.model_mode == ModelModes.AAE_RE or params.model_mode == ModelModes.AAE_STOCH:
             with tf.variable_scope("discriminator", reuse=False) as discriminator_scope:
                 dis_inputs = tf.concat([latent_prior_sample, latent_sample], axis=0)
                 dis_out = discriminator_output(

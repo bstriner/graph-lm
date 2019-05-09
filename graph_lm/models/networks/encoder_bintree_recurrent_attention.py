@@ -22,7 +22,7 @@ def encoder_bintree_recurrent_attn_base(
         h = inputs
         hidden_state, hidden_state_final = lstm(
             x=h,
-            num_layers=3,
+            num_layers=params.encoder_layers,
             num_units=params.encoder_dim,
             bidirectional=True,
             sequence_lengths=token_lengths

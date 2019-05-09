@@ -5,6 +5,7 @@ ssh -L 6006:localhost:6006 ben@unity
 docker run -d -v /mnt/data/projects/graph-lm/output/ptb:/tb -p 6006:6006 tensorflow/tensorflow tensorboard --logdir /tb
 docker run -d -v /mnt/data/projects/graph-lm/output/ptb/aae:/tb -p 6006:6006 tensorflow/tensorflow tensorboard --logdir /tb
 docker run -d -v /mnt/data/projects/graph-lm/output/ptb/aae/ctc_flat:/tb -p 6006:6006 tensorflow/tensorflow tensorboard --logdir /tb
+docker run -d -v /mnt/data/projects/graph-lm/output/ptb/aae/binary_tree:/tb -p 6006:6006 tensorflow/tensorflow tensorboard --logdir /tb
 """
 
 
@@ -35,7 +36,7 @@ if __name__ == '__main__':
     #tf.flags.DEFINE_string('data_dir', '../../data/ptb/processed', 'Data directory')
     tf.flags.DEFINE_string('data_dir', '../../data/ptb/processed-small', 'Data directory')
     tf.flags.DEFINE_string('data_version', 'v1', 'data_version')
-    tf.flags.DEFINE_string('model_dir', '../../output/ptb/aae/binary_tree/flat/v12-newds-ae-bn', 'Data directory')
+    tf.flags.DEFINE_string('model_dir', '../../output/ptb/aae/binary_tree/flat/v15-newds-ae-bn', 'Data directory')
     #tf.flags.DEFINE_string('model_dir', '../../output/ptb/aae/binary_tree/attn/v10', 'Data directory')
     #tf.flags.DEFINE_string('model_dir', '../../output/ptb/aae/dag_supervised/v14', 'Data directory')
     #tf.flags.DEFINE_string('model_dir', '../../output/ptb/aae/ctc_flat/v11-ae', 'Data directory')
