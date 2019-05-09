@@ -41,6 +41,7 @@ def default_params():
         model_mode="vae",
         gan_loss='v4',
 
+        embedding_dim=128,
         encoder_dim=256,
         encoder_layers=3,
         decoder_dim=256,

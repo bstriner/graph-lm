@@ -7,8 +7,21 @@ from tensorflow.python.framework import common_shapes
 from ...stats import get_bias_ctc
 
 
-def fc_shared_weight(inputs, vocab_size, weight, biases_initializer, activation_fn=None):
+def fc_shared_weight(inputs, vocab_size, embeddings, biases_initializer, activation_fn=None):
     with tf.variable_scope('fc_shared_weights'):
+        word_weight = tf.transpose(embeddings, (1, 0))
+        embedding_dim = embeddings.shape[-1].value
+        assert embedding_dim
+        input_dim = inputs.shape[-1].value
+        assert input_dim == embedding_dim
+        blank_weight = tf.get_variable(
+            name='blank_weight',
+            initializer=tf.initializers.random_normal(0.05),
+            dtype=tf.float32,
+            shape=(embedding_dim, 1)
+        )
+        weight = tf.concat([blank_weight, word_weight], axis=-1)
+        print("fc_shared_weight: {}, {}, {}".format(blank_weight, word_weight, weight))
         bias = tf.get_variable(
             name='bias',
             initializer=biases_initializer,
@@ -53,9 +66,10 @@ def ctc_projection(inputs, params, vocab_size, embeddings=None, weights_regulari
         h = fc_shared_weight(
             inputs=inputs,
             vocab_size=vocab_size,
-            weight=tf.transpose(embeddings, (1, 0)),
+            embeddings=embeddings,
             biases_initializer=biases_initializer
         )
+    assert h.shape[-1].value == vocab_size+1
     return h
 
 
@@ -92,9 +106,9 @@ def calc_ctc_output_resnet(x, vocab_size, params, weights_regularizer=None, reus
     # Y: (N,*, V)
     with tf.variable_scope('output_mlp_resnet', reuse=reuse):
         h = x
-        if params.batch_norm:
-            h = slim.batch_norm(h, is_training=is_training)
         for i in range(params.decoder_layers):
+            if params.batch_norm:
+                h = slim.batch_norm(h, is_training=is_training)
             h1 = slim.fully_connected(
                 inputs=h,
                 num_outputs=params.decoder_dim,
@@ -110,8 +124,16 @@ def calc_ctc_output_resnet(x, vocab_size, params, weights_regularizer=None, reus
                 weights_regularizer=weights_regularizer
             )
             h = h + h2
-            if params.batch_norm:
-                h = slim.batch_norm(h, is_training=is_training)
+        if h.shape[-1].value != params.embedding_dim:
+            h = slim.fully_connected(
+                inputs=h,
+                num_outputs=params.embedding_dim,
+                activation_fn=None,
+                scope='decoder_output_embedding_projection',
+                weights_regularizer=weights_regularizer
+            )
+        if params.batch_norm:
+            h = slim.batch_norm(h, is_training=is_training)
         h = ctc_projection(
             inputs=h,
             params=params,

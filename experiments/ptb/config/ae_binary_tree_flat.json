@@ -3,12 +3,13 @@
   "model_mode": "ae",
   "tree_depth": 6,
   "lr": 3e-4,
-  "batch_norm": false,
+  "batch_norm": true,
+  "embedding_dim": 128,
   "encoder_dim": 256,
   "encoder_layers": 3,
-  "decoder_dim": 128,
+  "decoder_dim": 256,
   "decoder_layers": 3,
-  "latent_dim": 64,
+  "latent_dim": 128,
   "l2": 1e-8,
-  "clip_gradient_value": 1e-2
+  "clip_gradient_value": 1e-1
 }

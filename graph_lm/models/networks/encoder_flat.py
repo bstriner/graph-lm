@@ -6,17 +6,19 @@ from .utils.rnn_util import linspace_feature, linspace_scaled_feature
 from ...models import AAE_STOCH, AE
 
 
-def encoder_flat(tokens, token_lengths, vocab_size, params, n, weights_regularizer=None, is_training=True):
+def encoder_flat(tokens, token_lengths, vocab_size, params, n, embeddings, weights_regularizer=None, is_training=True):
     with tf.variable_scope('encoder'):
         N = tf.shape(tokens)[0]
         L = tf.shape(tokens)[1]
         h = tf.transpose(tokens, (1, 0))  # (L,N)
+        """
         embeddings = tf.get_variable(
             dtype=tf.float32,
             name="embeddings",
             shape=[vocab_size, params.encoder_dim],
             initializer=tf.initializers.truncated_normal(
                 stddev=1. / tf.sqrt(tf.constant(params.encoder_dim, dtype=tf.float32))))
+        """
         inputs = [
             tf.nn.embedding_lookup(embeddings, h),  # (L, N, D)
             linspace_feature(L=L, N=N),

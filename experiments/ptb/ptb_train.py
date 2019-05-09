@@ -7,15 +7,16 @@ docker run -d -v /mnt/data/projects/graph-lm/output/ptb/aae:/tb -p 6006:6006 ten
 docker run -d -v /mnt/data/projects/graph-lm/output/ptb/aae/ctc_flat:/tb -p 6006:6006 tensorflow/tensorflow tensorboard --logdir /tb
 """
 
-import sys
-import traceback
-import warnings
 
 import tensorflow as tf
 
 import graph_lm.trainer
 
 
+"""
+import sys
+import traceback
+import warnings
 def warn_with_traceback(message, category, filename, lineno, file=None, line=None):
     log = file if hasattr(file, 'write') else sys.stderr
     traceback.print_stack(file=log)
@@ -23,7 +24,7 @@ def warn_with_traceback(message, category, filename, lineno, file=None, line=Non
 
 
 warnings.showwarning = warn_with_traceback
-
+"""
 
 def main(_argv):
     graph_lm.trainer.train()
@@ -34,19 +35,19 @@ if __name__ == '__main__':
     #tf.flags.DEFINE_string('data_dir', '../../data/ptb/processed', 'Data directory')
     tf.flags.DEFINE_string('data_dir', '../../data/ptb/processed-small', 'Data directory')
     tf.flags.DEFINE_string('data_version', 'v1', 'data_version')
-    tf.flags.DEFINE_string('model_dir', '../../output/ptb/aae/binary_tree/flat/v7-newds-ae', 'Data directory')
+    tf.flags.DEFINE_string('model_dir', '../../output/ptb/aae/binary_tree/flat/v12-newds-ae-bn', 'Data directory')
     #tf.flags.DEFINE_string('model_dir', '../../output/ptb/aae/binary_tree/attn/v10', 'Data directory')
     #tf.flags.DEFINE_string('model_dir', '../../output/ptb/aae/dag_supervised/v14', 'Data directory')
     #tf.flags.DEFINE_string('model_dir', '../../output/ptb/aae/ctc_flat/v11-ae', 'Data directory')
     #tf.flags.DEFINE_string('config', 'config/aae_binary_tree_attn_leaves.json', 'Data directory')
     #tf.flags.DEFINE_string('config', 'config/aae_dag_supervised.json', 'Data directory')
-    tf.flags.DEFINE_string('config', 'config/ae_ctc_flat.json', 'Data directory')
+    #tf.flags.DEFINE_string('config', 'config/ae_ctc_flat.json', 'Data directory')
     #tf.flags.DEFINE_string('config', 'config/aae_binary_tree_attn.json', 'Data directory')
-    # tf.flags.DEFINE_string('config', 'config/aae_binary_tree_flat.json', 'Data directory')
+    tf.flags.DEFINE_string('config', 'config/ae_binary_tree_flat.json', 'Data directory')
     # tf.flags.DEFINE_string('config', 'config/vae_ctc_flat.json', 'Data directory')
     # tf.flags.DEFINE_string('config', 'config/vae_ctc_flat_attn.json', 'Data directory')
     # tf.flags.DEFINE_string('config', 'config/vae_dag.json', 'Data directory')
-    tf.flags.DEFINE_integer('batch_size', 16, 'Batch size')
+    tf.flags.DEFINE_integer('batch_size', 32, 'Batch size')
     tf.flags.DEFINE_integer('capacity', 4000, 'capacity')
     tf.flags.DEFINE_integer('max_steps', 800000, 'max_steps')
     tf.flags.DEFINE_integer('eval_steps', 100, 'max_steps')

@@ -63,6 +63,12 @@ def make_model_binary_tree_flat(
             weights_regularizer = None
 
         with tf.variable_scope("autoencoder") as autoencoder_scope:
+            embeddings = tf.get_variable(
+                dtype=tf.float32,
+                name="embeddings",
+                shape=[vocab_size, params.embedding_dim],
+                initializer=tf.initializers.truncated_normal(
+                    stddev=1. / tf.sqrt(tf.constant(params.encoder_dim, dtype=tf.float32))))
             # Encoder
             mu, logsigma = encoder_flat(
                 tokens=tokens,
@@ -71,7 +77,8 @@ def make_model_binary_tree_flat(
                 params=params,
                 n=n,
                 weights_regularizer=weights_regularizer,
-                is_training=is_training
+                is_training=is_training,
+                embeddings=embeddings
             )
             # Sampling
             latent_sample, latent_prior_sample = sampling_flat(
@@ -79,8 +86,6 @@ def make_model_binary_tree_flat(
                 logsigma=logsigma,
                 params=params,
                 n=n)
-            with tf.variable_scope('encoder', reuse=True):
-                embeddings = tf.get_variable(name="embeddings")
             # Decoder
             with tf.variable_scope('decoder') as decoder_scope:
                 logits = decoder_binary_tree(
