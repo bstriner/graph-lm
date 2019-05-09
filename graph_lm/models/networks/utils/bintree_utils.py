@@ -62,6 +62,7 @@ def calc_children_resnet(x, hidden_dim, inputs=None, weights_regularizer=None, r
     # X: (N,x, D)
     # Y: (N,2x,D)
     input_dim = x.shape[-1].value
+    n = tf.shape(x)[0]
     with tf.variable_scope('children_mlp', reuse=reuse):
         if inputs is not None:
             h = tf.concat([x, inputs], axis=-1)
@@ -99,8 +100,8 @@ def calc_children_resnet(x, hidden_dim, inputs=None, weights_regularizer=None, r
         # h_base = tf.tile(x, (1, 1, 2))
         # kids = tf.reshape(h + h_base,
         #                  (tf.shape(h)[0], 2 * h.shape[1].value, params.decoder_dim))  # params.decoder_dim))
-        kids = tf.stack([h_left, h_right], axis=2)
-        kids = tf.reshape(kids, (-1, kids.shape[1].value * 2, input_dim))
+        kids = tf.stack([h_left, h_right], axis=2) #(N, L, 2, D)
+        kids = tf.reshape(kids, (n, kids.shape[1].value * 2, input_dim))
         print("Calc child: {}->{}".format(x, kids))
         return kids
 

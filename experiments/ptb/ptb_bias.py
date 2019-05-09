@@ -20,7 +20,7 @@ def main(_argv):
 
 if __name__ == '__main__':
     tf.logging.set_verbosity(tf.logging.INFO)
-    tf.flags.DEFINE_string('data_dir', '../../data/ptb/processed', 'Data directory')
+    tf.flags.DEFINE_string('data_dir', '../../data/ptb/processed-small', 'Data directory')
     tf.flags.DEFINE_string('data_version', 'v1', 'data_version')
     tf.flags.DEFINE_integer('batch_size', 16, 'Batch size')
     tf.flags.DEFINE_integer('capacity', 4000, 'capacity')

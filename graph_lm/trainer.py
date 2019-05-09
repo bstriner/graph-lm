@@ -12,7 +12,7 @@ from .models.model_binary_tree_attn import make_model_binary_tree_attn
 from .models.model_binary_tree_flat import make_model_binary_tree_flat
 from .models.model_dag_supervised import make_model_dag_supervised
 from .models.model_ctc_flat import make_model_ctc_flat
-from .models.model_vae_ctc_flat_attn import make_model_vae_ctc_flat_attn
+from .models.model_ctc_flat_attn import make_model_ctc_flat_attn
 from .models.model_vae_dag import make_model_dag_unsupervised
 
 
@@ -26,7 +26,7 @@ def make_model_fn(hparams, run_config, vocabs):
     elif hparams.model == 'ctc_flat':
         return make_model_ctc_flat(run_config, vocabs)
     elif hparams.model == 'ctc_flat_attn':
-        return make_model_vae_ctc_flat_attn(run_config, vocabs)
+        return make_model_ctc_flat_attn(run_config, vocabs)
     elif hparams.model == 'dag_unsupervised':
         return make_model_dag_unsupervised(run_config, vocabs)
     else:

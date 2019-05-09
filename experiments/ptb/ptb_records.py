@@ -4,14 +4,12 @@ import tensorflow as tf
 
 from graph_lm.data.calculate_vocab import calcuate_vocabmaps, calculate_vocablists, calculate_vocabs, combine_vocabs, \
     write_vocablists
-from graph_lm.data.conllu import make_conllu_dataset
+from graph_lm.data.conllu import make_conllu_dataset, filter_max_words
 from graph_lm.data.inputs import RECORD_FMT, SPLITS
 from graph_lm.data.write_records import write_records_parsed_v2
-
 PTB_FILES = [
     'train.conllu', 'dev.conllu', 'test.conllu'
 ]
-
 
 """
 Vocab size: 5047
@@ -20,6 +18,7 @@ Wrote [4244] records out of [5490]
 Wrote [4223] records out of [5460]
 """
 
+
 def main(_argv):
     min_counts = {
         'text': tf.flags.FLAGS.min_count,
@@ -27,7 +26,7 @@ def main(_argv):
     }
     data_files = [os.path.join(tf.flags.FLAGS.data_dir, f) for f in PTB_FILES]
     output_files = [os.path.join(tf.flags.FLAGS.output_dir, f, RECORD_FMT) for f in SPLITS]
-    data_parsed = [make_conllu_dataset(f) for f in data_files]
+    data_parsed = [make_conllu_dataset(f, filter_fn=filter_max_words(tf.flags.FLAGS.max_length)) for f in data_files]
     data_count = [sum(1 for _ in ds()) for ds in data_parsed]
     dataset_vocabs = [calculate_vocabs(dataset=ds()) for ds in data_parsed]
     vocabs = combine_vocabs(vocabs=dataset_vocabs)

@@ -3,10 +3,10 @@ from tensorflow.contrib import slim
 
 from graph_lm.models.networks.utils.attn_util import calc_attn_v2
 from graph_lm.models.networks.utils.rnn_util import lstm
+from .utils.rnn_util import linspace_scaled_feature, linspace_feature
 
-
-def vae_flat_encoder_attn(tokens, token_lengths, vocab_size, params, n, output_length, weights_regularizer=None
-                          , is_training=True):
+def encoder_flat_attn(tokens, token_lengths, vocab_size, params, n, output_length, weights_regularizer=None
+                      , is_training=True):
     """
 
     :param tokens: (N,L)
@@ -19,6 +19,7 @@ def vae_flat_encoder_attn(tokens, token_lengths, vocab_size, params, n, output_l
     :return:
     """
     L = tf.shape(tokens)[1]
+    N=n
     with tf.variable_scope('encoder'):
         with tf.variable_scope('step_1'):
             h = tf.transpose(tokens, (1, 0))  # (L,N)
@@ -28,18 +29,13 @@ def vae_flat_encoder_attn(tokens, token_lengths, vocab_size, params, n, output_l
                 shape=[vocab_size, params.encoder_dim],
                 initializer=tf.initializers.truncated_normal(
                     stddev=1. / tf.sqrt(tf.constant(params.encoder_dim, dtype=tf.float32))))
-            h = tf.nn.embedding_lookup(embeddings, h)  # (L, N, D)
-            ls = tf.linspace(
-                start=tf.constant(0, dtype=tf.float32),
-                stop=tf.constant(1, dtype=tf.float32),
-                num=L)  # (L,)
-            ls = tf.tile(tf.expand_dims(ls, 1), [1, n])  # (L,N)
-            ls = ls * tf.cast(L, dtype=tf.float32) / tf.cast(tf.expand_dims(token_lengths, 0), dtype=tf.float32)
-            ls = tf.expand_dims(ls, 2)  # ( L,N,1)
-            h = tf.concat([h, ls], axis=-1)
+            h_embedding = tf.nn.embedding_lookup(embeddings, h)  # (L, N, D)
+            h_ls_1 = linspace_feature(L=L, N=N)
+            h_ls_2 = linspace_scaled_feature(L=L,N=N,sequence_length=token_lengths)
+            h = tf.concat([h_embedding, h_ls_1, h_ls_2], axis=-1)
             hidden_state, hidden_state_final = lstm(
                 x=h,
-                num_layers=2,
+                num_layers=params.encoder_layers,
                 num_units=params.encoder_dim,
                 bidirectional=True,
                 sequence_lengths=token_lengths
@@ -47,7 +43,8 @@ def vae_flat_encoder_attn(tokens, token_lengths, vocab_size, params, n, output_l
             h = tf.concat(hidden_state_final, axis=-1)  # (layers*directions, N, D)
             h = tf.transpose(h, (1, 0, 2))  # (N,layers*directions,D)
             h = tf.reshape(h, (n, h.shape[1].value * h.shape[2].value))  # (N, layers*directions*D)
-            h = slim.batch_norm(inputs=h, is_training=True)
+            if params.batch_norm:
+                h = slim.batch_norm(inputs=h, is_training=True)
             h = slim.fully_connected(
                 inputs=h,
                 num_outputs=params.encoder_dim,
@@ -55,7 +52,8 @@ def vae_flat_encoder_attn(tokens, token_lengths, vocab_size, params, n, output_l
                 scope='encoder_mlp_1',
                 weights_regularizer=weights_regularizer
             )
-            h = slim.batch_norm(inputs=h, is_training=True)
+            if params.batch_norm:
+                h = slim.batch_norm(inputs=h, is_training=True)
             """
             h = slim.fully_connected(
                 inputs=h,

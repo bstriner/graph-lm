@@ -1,10 +1,12 @@
 from tensorflow.contrib import slim
 
-from .ctc_output import calc_ctc_output
+from .ctc_output import calc_ctc_output,calc_ctc_output_resnet
 from .utils.bintree_utils import binary_tree_resnet, infix_indices, stack_tree_v2
 
 
-def decoder_binary_tree(latent, vocab_size, params, weights_regularizer=None, is_training=True, reuse=None):
+def decoder_binary_tree(latent, vocab_size, params, weights_regularizer=None, is_training=True,
+                        reuse=None,
+                        embeddings=None):
     # latent (N, D)
     depth = params.tree_depth
     assert depth >= 0
@@ -21,10 +23,11 @@ def decoder_binary_tree(latent, vocab_size, params, weights_regularizer=None, is
         hidden_dim=params.decoder_dim
     )
     flat_layers = stack_tree_v2(tree_layers)  # (L,N,V)
-    logits = calc_ctc_output(
+    logits = calc_ctc_output_resnet(
         flat_layers,
         vocab_size=vocab_size,
         params=params,
         weights_regularizer=weights_regularizer,
+        embeddings=embeddings,
         is_training=is_training)
     return logits

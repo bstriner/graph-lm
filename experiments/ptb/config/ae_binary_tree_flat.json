@@ -1,0 +1,14 @@
+{
+  "model": "binary_tree_flat",
+  "model_mode": "ae",
+  "tree_depth": 6,
+  "lr": 3e-4,
+  "batch_norm": false,
+  "encoder_dim": 256,
+  "encoder_layers": 3,
+  "decoder_dim": 128,
+  "decoder_layers": 3,
+  "latent_dim": 64,
+  "l2": 1e-8,
+  "clip_gradient_value": 1e-2
+}

@@ -51,8 +51,20 @@ def read_conllu(data_file, fmt=None) -> Generator[List[Word], None, None]:
             yield stack
 
 
-def make_conllu_dataset(data_file, fmt=None) -> Callable[[], Generator[List[Word], None, None]]:
+def filter_max_words(max_words):
+    def filter_fn(ds):
+        for sentence in ds:
+            if len(sentence) <= max_words:
+                yield sentence
+
+    return filter_fn
+
+
+def make_conllu_dataset(data_file, fmt=None, filter_fn=None) -> Callable[[], Generator[List[Word], None, None]]:
     def dataset():
-        return read_conllu(data_file, fmt=fmt)
+        ds = read_conllu(data_file, fmt=fmt)
+        if filter_fn is not None:
+            ds = filter_fn(ds)
+        return ds
 
     return dataset
