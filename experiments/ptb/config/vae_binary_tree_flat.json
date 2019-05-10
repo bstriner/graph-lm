@@ -1,0 +1,20 @@
+{
+  "model": "binary_tree_flat",
+  "model_mode": "vae",
+  "kl_anneal_start": 5000,
+  "kl_anneal_end": 100000,
+  "kl_anneal_min": 1e-4,
+  "kl_anneal_max": 1.0,
+  "tree_depth": 6,
+  "lr": 3e-4,
+  "batch_norm": true,
+  "embedding_dim": 128,
+  "encoder_dim": 300,
+  "encoder_layers": 4,
+  "decoder_dim": 300,
+  "decoder_layers": 4,
+  "discriminator_dim": 512,
+  "discriminator_layers": 4,
+  "latent_dim": 200,
+  "l2": 1e-8
+}

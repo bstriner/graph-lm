@@ -1,8 +1,0 @@
-{
-  "model": "vae_binary_tree",
-  "kl_anneal_start": 0,
-  "kl_anneal_end": 0,
-  "kl_anneal_min": 0.0,
-  "kl_anneal_max": 0.0,
-  "tree_depth": 8
-}
