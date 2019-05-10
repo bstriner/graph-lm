@@ -18,6 +18,6 @@
   "decoder_layers": 4,
   "discriminator_dim": 512,
   "discriminator_layers": 4,
-  "latent_dim": 128,
+  "latent_dim": 200,
   "l2": 1e-8
 }
